@@ -12,6 +12,7 @@ import java.util.TimeZone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -20,9 +21,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 
+@Log4j2
 public class KafkaManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(KafkaManager.class.getName());
 
     /**
      * Constructs the SqlManager.
@@ -69,7 +69,7 @@ public class KafkaManager extends SqlManager {
         // User Custom kafka properties
         props.putAll(kafkaProps);
 
-        LOG.debug("kafka properties: " + props);
+        log.debug("kafka properties: " + props);
 
         // Create kafka producer
         Producer<String, String> producer = new KafkaProducer<>(props);
@@ -180,7 +180,7 @@ public class KafkaManager extends SqlManager {
                 // Send to kafka
                 producer.send(new ProducerRecord<>(topic, partition, key, mapper.writeValueAsString(obj)), (m, e) -> {
                     if (e != null) {
-                        LOG.error(e);
+                        log.error(e);
                     }/*else {
                       System.out.printf("Produced record to topic %s partition [%d] @ offset %d%n", m.topic(), m.partition(), m.offset());
                     }*/

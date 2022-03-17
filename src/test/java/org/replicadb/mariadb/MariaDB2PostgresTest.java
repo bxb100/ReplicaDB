@@ -1,5 +1,6 @@
 package org.replicadb.mariadb;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
+@Log4j2
 class MariaDB2PostgresTest {
-    private static final Logger LOG = LogManager.getLogger(MariaDB2PostgresTest.class);
     private static final String RESOURECE_DIR = Paths.get("src", "test", "resources").toFile().getAbsolutePath();
     private static final String REPLICADB_CONF_FILE = "/replicadb.conf";
     private static final String MARIADB_SOURCE_FILE = "/mariadb/mariadb-source.sql";
@@ -57,13 +58,13 @@ class MariaDB2PostgresTest {
         Connection con = DriverManager.getConnection(mariadb.getJdbcUrl(), mariadb.getUsername(), mariadb.getPassword());
         ScriptRunner runner = new ScriptRunner(con, false, true);
         runner.runScript(new BufferedReader(new FileReader(RESOURECE_DIR + MARIADB_SOURCE_FILE)));
-        LOG.info("Creating MariaDB source tables");
+        log.info("Creating MariaDB source tables");
         con.close();
         /*Postgres*/
         con = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
         runner = new ScriptRunner(con, false, true);
         runner.runScript(new BufferedReader(new FileReader(RESOURECE_DIR + POSTGRES_SINK_FILE)));
-        LOG.info("Creating Postgres sink tables");
+        log.info("Creating Postgres sink tables");
         con.close();
     }
 
@@ -97,7 +98,7 @@ class MariaDB2PostgresTest {
         ResultSet rs = stmt.executeQuery("SELECT VERSION()");
         rs.next();
         String version = rs.getString(1);
-        LOG.info(version);
+        log.info(version);
         assertTrue(version.contains("10.2"));
     }
 
@@ -107,7 +108,7 @@ class MariaDB2PostgresTest {
         ResultSet rs = stmt.executeQuery("SELECT 1");
         rs.next();
         String version = rs.getString(1);
-        LOG.info(version);
+        log.info(version);
         assertTrue(version.contains("1"));
     }
 

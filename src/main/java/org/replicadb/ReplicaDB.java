@@ -15,6 +15,7 @@ import java.util.concurrent.TimeoutException;
 import io.sentry.ITransaction;
 import io.sentry.Sentry;
 import io.sentry.SpanStatus;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -27,14 +28,14 @@ import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.ConnManager;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.ManagerFactory;
-import static org.replicadb.config.Sentry.SentryInit;
+import static org.replicadb.monitor.Sentry.SentryInit;
 
 /**
  * ReplicaDB
  */
+@Log4j2
 public class ReplicaDB {
 
-    private static final Logger LOG = LogManager.getLogger(ReplicaDB.class.getName());
     private static final int SUCCESS = 0;
     private static final int ERROR = 1;
 
@@ -49,12 +50,12 @@ public class ReplicaDB {
             options = new ToolOptions(args);
             exitCode = processReplica(options);
         } catch (ParseException | IOException e) {
-            LOG.error("Got exception running ReplicaDB:", e);
+            log.error("Got exception running ReplicaDB:", e);
             exitCode = ERROR;
         }
 
         long elapsed = (System.nanoTime() - start) / 1000000;
-        LOG.info("Total process time: " + elapsed + "ms");
+        log.info("Total process time: " + elapsed + "ms");
         System.exit(exitCode);
     }
 
@@ -63,15 +64,15 @@ public class ReplicaDB {
         ConnManager sourceDs = null, sinkDs = null;
         ExecutorService preSinkTasksExecutor = null, replicaTasksService = null;
 
-        LOG.info("Running ReplicaDB version: " + options.getVersion());
+        log.info("Running ReplicaDB version: " + options.getVersion());
 
         if (options.isVerbose()) {
             setLogToDebugMode();
-            LOG.info("Setting verbose mode");
-            LOG.debug(options.toString());
+            log.info("Setting verbose mode");
+            log.debug(options.toString());
         }
 
-        if (!options.isHelp() && !options.isVersion()) {
+        if (!options.isHelp() && !options.isVersionCheck()) {
             // Sentry
             SentryInit(options);
             ITransaction transaction = Sentry.startTransaction("processReplica()", "task");
@@ -84,7 +85,7 @@ public class ReplicaDB {
 
                 if (options.getMode().equals(ReplicationMode.CDC.getModeText())) {
                     // ReplicaDB in CDC mode is running forever
-                    LOG.info("Running ReplicaDB in CDC mode");
+                    log.info("Running ReplicaDB in CDC mode");
 
                     ReplicaDBCDC cdc = new ReplicaDBCDC(sourceDs, sinkDs);
                     cdc.run();
@@ -122,7 +123,7 @@ public class ReplicaDB {
 
                     // wait for terminating
                     if (preSinkTasksFuture != null) {
-                        LOG.info("Waiting for the asynchronous task to be completed...");
+                        log.info("Waiting for the asynchronous task to be completed...");
                         preSinkTasksFuture.get();
                     }
 
@@ -136,7 +137,7 @@ public class ReplicaDB {
                 }
 
             } catch (Exception e) {
-                LOG.error("Got exception running ReplicaDB:", e);
+                log.error("Got exception running ReplicaDB:", e);
                 Sentry.captureException(e);
                 transaction.setThrowable(e);
                 transaction.setStatus(SpanStatus.INTERNAL_ERROR);
@@ -160,7 +161,7 @@ public class ReplicaDB {
                         replicaTasksService.shutdownNow();
 
                 } catch (Exception e) {
-                    LOG.error(e);
+                    log.error(e);
                 }
             }
         }

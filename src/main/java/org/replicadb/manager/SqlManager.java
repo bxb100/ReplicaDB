@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.concurrent.TimedSemaphore;
 import org.apache.logging.log4j.LogManager;
@@ -31,9 +32,8 @@ import org.replicadb.cli.ToolOptions;
  * This is an abstract class; it requires a database-specific
  * ConnManager implementation to actually create the connection.
  */
+@Log4j2
 public abstract class SqlManager extends ConnManager {
-
-    private static final Logger LOG = LogManager.getLogger(SqlManager.class.getName());
 
     protected Connection connection;
     protected DataSourceType dsType;
@@ -60,7 +60,7 @@ public abstract class SqlManager extends ConnManager {
      */
     protected void initOptionDefaults() {
         //if (options.getFetchSize() == null) {
-        //    LOG.info("Using default fetchSize of " + DEFAULT_FETCH_SIZE);
+        //    log.info("Using default fetchSize of " + DEFAULT_FETCH_SIZE);
         //    options.setFetchSize(DEFAULT_FETCH_SIZE);
         //}
     }
@@ -98,7 +98,7 @@ public abstract class SqlManager extends ConnManager {
                 /*" AS " +   // needed for hsqldb; doesn't hurt anyone else.
                 // Oracle Hurt...
                 escapeTableName(tableName);*/
-        LOG.debug(Thread.currentThread().getName() + ": Reading table with command: " + sqlCmd);
+        log.debug(Thread.currentThread().getName() + ": Reading table with command: " + sqlCmd);
         return execute(sqlCmd);
     }
 
@@ -114,7 +114,7 @@ public abstract class SqlManager extends ConnManager {
             } else if (dsType == DataSourceType.SINK) {
                 this.connection = makeSinkConnection();
             } else {
-                LOG.error("DataSourceType must be Source or Sink");
+                log.error("DataSourceType must be Source or Sink");
             }
         }
 
@@ -136,7 +136,7 @@ public abstract class SqlManager extends ConnManager {
         PreparedStatement statement = this.getConnection().prepareStatement(stmt, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
         if (fetchSize != null) {
-            LOG.debug(Thread.currentThread().getName() + ": Using fetchSize for next query: " + fetchSize);
+            log.debug(Thread.currentThread().getName() + ": Using fetchSize for next query: " + fetchSize);
             statement.setFetchSize(fetchSize);
         }
         this.lastStatement = statement;
@@ -146,14 +146,14 @@ public abstract class SqlManager extends ConnManager {
             }
         }
 
-        LOG.info(Thread.currentThread().getName() + ": Executing SQL statement: " + stmt);
+        log.info(Thread.currentThread().getName() + ": Executing SQL statement: " + stmt);
 
         StringBuilder sb = new StringBuilder();
         for (Object o : args) {
             sb.append(o.toString())
                     .append(", ");
         }
-        LOG.info(Thread.currentThread().getName() + ": With args: " + sb);
+        log.info(Thread.currentThread().getName() + ": With args: " + sb);
 
         return statement.executeQuery();
     }
@@ -175,7 +175,7 @@ public abstract class SqlManager extends ConnManager {
             try {
                 this.getConnection().close();
             } catch (Exception e) {
-                LOG.error(e);
+                log.error(e);
             }
         }
     }
@@ -203,7 +203,7 @@ public abstract class SqlManager extends ConnManager {
 
         Properties connectionParams = options.getSourceConnectionParams();
         if (connectionParams != null && connectionParams.size() > 0) {
-            LOG.trace("User specified connection params. Using properties specific API for making connection.");
+            log.trace("User specified connection params. Using properties specific API for making connection.");
 
             Properties props = new Properties();
             if (username != null) {
@@ -217,7 +217,7 @@ public abstract class SqlManager extends ConnManager {
             props.putAll(connectionParams);
             connection = DriverManager.getConnection(connectString, props);
         } else {
-            LOG.trace("No connection parameters specified. Using regular API for making connection.");
+            log.trace("No connection parameters specified. Using regular API for making connection.");
             if (username == null) {
                 connection = DriverManager.getConnection(connectString);
             } else {
@@ -260,7 +260,7 @@ public abstract class SqlManager extends ConnManager {
 
         Properties connectionParams = options.getSinkConnectionParams();
         if (connectionParams != null && connectionParams.size() > 0) {
-            LOG.trace("User specified connection params. Using properties specific API for making connection.");
+            log.trace("User specified connection params. Using properties specific API for making connection.");
 
             Properties props = new Properties();
             if (username != null) {
@@ -274,7 +274,7 @@ public abstract class SqlManager extends ConnManager {
             props.putAll(connectionParams);
             connection = DriverManager.getConnection(connectString, props);
         } else {
-            LOG.trace("No connection parameters specified. Using regular API for making connection.");
+            log.trace("No connection parameters specified. Using regular API for making connection.");
             if (username == null) {
                 connection = DriverManager.getConnection(connectString);
             } else {
@@ -295,7 +295,7 @@ public abstract class SqlManager extends ConnManager {
             try {
                 this.lastStatement.close();
             } catch (SQLException e) {
-                LOG.error("Exception closing executed Statement: " + e, e);
+                log.error("Exception closing executed Statement: " + e, e);
             }
 
             this.lastStatement = null;
@@ -313,7 +313,7 @@ public abstract class SqlManager extends ConnManager {
         pks = getPrimaryKeys(table, schema);
 
         if (null == pks) {
-            LOG.debug("Getting PKs for schema: {} and table: {}. Not found.", schema, table);
+            log.debug("Getting PKs for schema: {} and table: {}. Not found.", schema, table);
 
             // Trying with uppercase
             table = table != null ? table.toUpperCase() : null;
@@ -322,7 +322,7 @@ public abstract class SqlManager extends ConnManager {
             pks = getPrimaryKeys(table, schema);
 
             if (null == pks) {
-                LOG.debug("Getting PKs for schema: {} and table: {}. Not found.", schema, table);
+                log.debug("Getting PKs for schema: {} and table: {}. Not found.", schema, table);
 
                 // Trying with lowercase
                 table = table != null ? table.toLowerCase() : null;
@@ -330,13 +330,13 @@ public abstract class SqlManager extends ConnManager {
 
                 pks = getPrimaryKeys(table, schema);
                 if (null == pks) {
-                    LOG.debug("Getting PKs for schema: {} and table: {}. Not found.", schema, table);
+                    log.debug("Getting PKs for schema: {} and table: {}. Not found.", schema, table);
                     return null;
                 }
             }
         }
 
-        LOG.info("Getting PKs for schema: {} and table: {}. Found.", schema, table);
+        log.info("Getting PKs for schema: {} and table: {}. Found.", schema, table);
 
         return pks;
     }
@@ -371,7 +371,7 @@ public abstract class SqlManager extends ConnManager {
                 getConnection().commit();
             }
         } catch (SQLException sqlException) {
-            LOG.error("Error reading primary key metadata: " + sqlException, sqlException);
+            log.error("Error reading primary key metadata: " + sqlException, sqlException);
             return null;
         }
     }
@@ -391,7 +391,7 @@ public abstract class SqlManager extends ConnManager {
             tableName = getSinkTableName();
         }
         String sql = "TRUNCATE TABLE " + tableName;
-        LOG.info("Truncating sink table with this command: " + sql);
+        log.info("Truncating sink table with this command: " + sql);
         Statement statement = this.getConnection().createStatement();
         statement.executeUpdate(sql);
         statement.close();
@@ -406,7 +406,7 @@ public abstract class SqlManager extends ConnManager {
      */
     public Future<Integer> atomicDeleteSinkTable(ExecutorService executor) {
         String sql = " DELETE FROM " + this.getSinkTableName();
-        LOG.info("Atomic and asynchronous deletion of all data from the sink table with this command: " + sql);
+        log.info("Atomic and asynchronous deletion of all data from the sink table with this command: " + sql);
 
         return executor.submit(() -> {
             Statement statement = this.getConnection().createStatement();
@@ -448,7 +448,7 @@ public abstract class SqlManager extends ConnManager {
                     .append(getQualifiedStagingTableName());
         }
 
-        LOG.info("Inserting data from staging table to sink table within a transaction: " + sql);
+        log.info("Inserting data from staging table to sink table within a transaction: " + sql);
         statement.executeUpdate(sql.toString());
         statement.close();
         this.getConnection().commit();
@@ -480,7 +480,7 @@ public abstract class SqlManager extends ConnManager {
         // TODO: Do not drop stagging table if it's defined by user.
         Statement statement = this.getConnection().createStatement();
         String sql = "DROP TABLE " + getQualifiedStagingTableName();
-        LOG.info("Dropping staging table with this command: {}", sql);
+        log.info("Dropping staging table with this command: {}", sql);
 
         statement.executeUpdate(sql);
         statement.close();
@@ -500,7 +500,7 @@ public abstract class SqlManager extends ConnManager {
                 // If the staging parameters have not been defined then the table is created in the public schema
                 if (options.getSinkStagingSchema() == null || options.getSinkStagingSchema().isEmpty()) {
                     // TODO: This is only valid for PostgreSQL
-                    LOG.warn("No staging schema is defined, setting it as PUBLIC");
+                    log.warn("No staging schema is defined, setting it as PUBLIC");
                     options.setSinkStagingSchema("public");
                 }
                 this.createStagingTable();
@@ -512,7 +512,7 @@ public abstract class SqlManager extends ConnManager {
             return atomicDeleteSinkTable(executor);
         } else {
             // Truncate sink table if it is enabled
-            if (!options.isSinkDisableTruncate()) {
+            if (!options.getSinkDisableTruncate()) {
                 this.truncateTable();
             }
 
@@ -606,7 +606,7 @@ public abstract class SqlManager extends ConnManager {
                     fetchs = 0;
                 }
             } catch (InterruptedException e) {
-                LOG.error(e);
+                log.error(e);
             }
         }
     }
@@ -638,7 +638,7 @@ public abstract class SqlManager extends ConnManager {
             if (limit == 0) limit = 1;
             this.bandwidthRateLimiter = new TimedSemaphore(1, TimeUnit.SECONDS, (int) Math.round(limit));
 
-            LOG.info("Estimated Row Size: {} KB. Estimated limit of fetchs per second: {} ", rowSize, limit);
+            log.info("Estimated Row Size: {} KB. Estimated limit of fetchs per second: {} ", rowSize, limit);
 
 
         }

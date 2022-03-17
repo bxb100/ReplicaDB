@@ -6,17 +6,16 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.debezium.data.Envelope;
+import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.transforms.Transformation;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Log4j2
 public class Filter<R extends ConnectRecord<R>> implements Transformation<R> {
 
-    private static final Logger LOG = LogManager.getLogger(Filter.class);
     private final HashMap<String, String> conditions = new HashMap<>();
 
     @Override
@@ -27,7 +26,7 @@ public class Filter<R extends ConnectRecord<R>> implements Transformation<R> {
             Envelope.Operation operation = Envelope.operationFor((SourceRecord) record);
 
             if (conditions.get(tableName) != null && operation != null && conditions.get(tableName).contains(operation.code())) {
-                LOG.debug("Filter applied. Source table: {} operation {} ", tableName, operation.code());
+                log.debug("Filter applied. Source table: {} operation {} ", tableName, operation.code());
                 return null;
             }
         }
@@ -51,7 +50,7 @@ public class Filter<R extends ConnectRecord<R>> implements Transformation<R> {
             String json = (String) map.get("condition");
 
             if (json == null) {
-                LOG.debug("No filtering conditions have been defined");
+                log.debug("No filtering conditions have been defined");
                 return;
             }
 
@@ -61,10 +60,10 @@ public class Filter<R extends ConnectRecord<R>> implements Transformation<R> {
                 conditions.put(item.get("table"), item.get("operations"));
             }
 
-            LOG.debug("Defined filtering conditions:{}", conditions);
+            log.debug("Defined filtering conditions:{}", conditions);
 
         } catch (JsonProcessingException e) {
-            LOG.error(e);
+            log.error(e);
             close();
         }
     }

@@ -20,7 +20,6 @@ import org.replicadb.manager.DataSourceType;
  * the files about formats, compressions, etc.
  */
 public abstract class FileManager {
-    private static final Logger LOG = LogManager.getLogger(FileManager.class);
     /**
      * String array with the paths of the temporal files
      */

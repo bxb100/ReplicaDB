@@ -3,6 +3,7 @@ package org.replicadb;
 import java.sql.ResultSet;
 import java.util.concurrent.Callable;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
@@ -10,9 +11,8 @@ import org.replicadb.manager.ConnManager;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.ManagerFactory;
 
+@Log4j2
 final public class ReplicaTask implements Callable<Integer> {
-
-    private static final Logger LOG = LogManager.getLogger(ReplicaTask.class.getName());
 
     private final int taskId;
     private final ToolOptions options;
@@ -32,7 +32,7 @@ final public class ReplicaTask implements Callable<Integer> {
 
         Thread.currentThread().setName(taskName);
 
-        LOG.info("Starting " + Thread.currentThread().getName());
+        log.info("Starting " + Thread.currentThread().getName());
 
         // Do stuff...
         // Obtener una instancia del DriverManager del Source
@@ -46,14 +46,14 @@ final public class ReplicaTask implements Callable<Integer> {
         try {
             sourceDs.getConnection();
         } catch (Exception e) {
-            LOG.error("ERROR in " + this.taskName + " getting Source connection: " + e.getMessage());
+            log.error("ERROR in " + this.taskName + " getting Source connection: " + e.getMessage());
             throw e;
         }
 
         try {
             sinkDs.getConnection();
         } catch (Exception e) {
-            LOG.error("ERROR in " + this.taskName + " getting Sink connection: " + e.getMessage());
+            log.error("ERROR in " + this.taskName + " getting Sink connection: " + e.getMessage());
             throw e;
         }
 
@@ -61,16 +61,16 @@ final public class ReplicaTask implements Callable<Integer> {
         try {
             rs = sourceDs.readTable(null, null, taskId);
         } catch (Exception e) {
-            LOG.error("ERROR in " + this.taskName + " reading source table: " + e.getMessage());
+            log.error("ERROR in " + this.taskName + " reading source table: " + e.getMessage());
             throw e;
         }
 
         try {
             int processedRows = sinkDs.insertDataToTable(rs, taskId);
             // TODO determine the total rows processed in all the managers
-            LOG.info("A total of {} rows processed by task {}", processedRows, taskId);
+            log.info("A total of {} rows processed by task {}", processedRows, taskId);
         } catch (Exception e) {
-            LOG.error("ERROR in " + this.taskName + " inserting data to sink table: " + e.getMessage());
+            log.error("ERROR in " + this.taskName + " inserting data to sink table: " + e.getMessage());
             throw e;
         }
 

@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
@@ -19,6 +20,7 @@ import org.replicadb.cli.ToolOptions;
  * The implementations of this class drive the actual discussion with
  * the database about table formats, etc.
  */
+@Log4j2
 public abstract class ConnManager {
 
     /**
@@ -27,7 +29,6 @@ public abstract class ConnManager {
      * conditions on the input to allow input splits to parallelise the import.
      */
     public static final String SUBSTITUTE_TOKEN = "$CONDITIONS";
-    private static final Logger LOG = LogManager.getLogger(ConnManager.class.getName());
     private static String randomSinkStagingTableName;
     protected ToolOptions options;
 
@@ -186,7 +187,7 @@ public abstract class ConnManager {
             return this.options.getSourceColumns();
         } else {
             this.options.setSinkColumns(getColumnsFromResultSetMetaData(rsmd));
-            LOG.warn("Options source-columns and sink-columns are null, getting from Source ResultSetMetaData: " + this.options.getSinkColumns());
+            log.warn("Options source-columns and sink-columns are null, getting from Source ResultSetMetaData: " + this.options.getSinkColumns());
             return this.options.getSinkColumns();
         }
     }
@@ -240,7 +241,7 @@ public abstract class ConnManager {
      * Return null if this cannot be accessed.
      */
     public Timestamp getCurrentDbTimestamp() {
-        LOG.warn("getCurrentDbTimestamp(): Using local system timestamp.");
+        log.warn("getCurrentDbTimestamp(): Using local system timestamp.");
         return new Timestamp(System.currentTimeMillis());
     }
 

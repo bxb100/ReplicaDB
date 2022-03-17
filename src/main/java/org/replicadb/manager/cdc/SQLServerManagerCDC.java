@@ -6,16 +6,15 @@ import java.util.Properties;
 
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.RecordChangeEvent;
+import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.connect.source.SourceRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.SQLServerManager;
 
+@Log4j2
 public class SQLServerManagerCDC extends SQLServerManager implements DebeziumEngine.ChangeConsumer<RecordChangeEvent<SourceRecord>> {
 
-    private static final Logger LOG = LogManager.getLogger(SQLServerManagerCDC.class);
     private static final String DEBEZIUM_CONNECTOR_CLASS = "io.debezium.connector.sqlserver.SqlServerConnector";
 
     /**
@@ -99,7 +98,7 @@ public class SQLServerManagerCDC extends SQLServerManager implements DebeziumEng
             }
         }
 
-        LOG.info("Connection params host: {}, port: {}, dbname: {}", hostName, port, dbname);
+        log.info("Connection params host: {}, port: {}, dbname: {}", hostName, port, dbname);
 
         Properties props = new Properties();
         props.setProperty("database.hostname", hostName);

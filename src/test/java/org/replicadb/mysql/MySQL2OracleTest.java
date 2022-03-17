@@ -1,5 +1,6 @@
 package org.replicadb.mysql;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,9 +24,9 @@ import java.util.TimeZone;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Log4j2
 @Testcontainers
 class MySQL2OracleTest {
-    private static final Logger LOG = LogManager.getLogger(MySQL2OracleTest.class);
     private static final String RESOURECE_DIR = Paths.get("src", "test", "resources").toFile().getAbsolutePath();
     private static final String REPLICADB_CONF_FILE = "/replicadb.conf";
     private static final String MYSQL_SOURCE_FILE = "/mysql/mysql-source.sql";
@@ -86,7 +87,7 @@ class MySQL2OracleTest {
         ResultSet rs = stmt.executeQuery("select count(*) from t_sink");
         rs.next();
         int count = rs.getInt(1);
-        LOG.info(count);
+        log.info(count);
         return count;
     }
 
@@ -97,7 +98,7 @@ class MySQL2OracleTest {
         ResultSet rs = stmt.executeQuery("SELECT VERSION()");
         rs.next();
         String version = rs.getString(1);
-        LOG.info(version);
+        log.info(version);
         assertTrue(version.contains("5.6"));
     }
 
@@ -108,7 +109,7 @@ class MySQL2OracleTest {
         ResultSet rs = stmt.executeQuery("SELECT 1 FROM DUAL");
         rs.next();
         String version = rs.getString(1);
-        LOG.info(version);
+        log.info(version);
         assertTrue(version.contains("1"));
         oracleConn.close();
     }

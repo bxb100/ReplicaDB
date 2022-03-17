@@ -3,10 +3,13 @@ package org.replicadb.cli;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * Replaces the environment variables in a String.
  * The variables must be specified as follows ${varName}
  */
+@UtilityClass
 class EnvironmentVariableEvaluator {
     private static final String VAR_REG_EXP = "\\$\\{(.*?)\\}";
     private static final Pattern varPattern = Pattern.compile(VAR_REG_EXP);
@@ -24,15 +27,17 @@ class EnvironmentVariableEvaluator {
         String envVariable;
         Matcher varMatcher = varPattern.matcher(input);
 
+        StringBuffer sb = new StringBuffer();
         while (varMatcher.find()) {
             envVariable = varMatcher.group(1);
             String replaceWith = System.getenv(envVariable);
+
             if (replaceWith != null) {
-                input = input.replace("${" + envVariable + "}", replaceWith);
+                varMatcher.appendReplacement(sb, replaceWith);
             }
         }
-        return input;
+        varMatcher.appendTail(sb);
+        return sb.toString();
     }
-
 
 }

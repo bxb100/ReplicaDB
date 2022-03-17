@@ -6,12 +6,13 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.concurrent.TimeUnit;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.concurrent.TimedSemaphore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@Log4j2
 public class BandwidthThrottling {
-    private static final Logger LOG = LogManager.getLogger(BandwidthThrottling.class);
 
     private TimedSemaphore bandwidthRateLimiter;
     private int rowSize = 0;
@@ -47,7 +48,7 @@ public class BandwidthThrottling {
             if (limit == 0) limit = 1;
             this.bandwidthRateLimiter = new TimedSemaphore(1, TimeUnit.SECONDS, (int) Math.round(limit));
 
-            LOG.info("Estimated Row Size: {} KB. Estimated limit of fetchs per second: {} ", rowSize, limit);
+            log.info("Estimated Row Size: {} KB. Estimated limit of fetchs per second: {} ", rowSize, limit);
 
 
         }
@@ -68,7 +69,7 @@ public class BandwidthThrottling {
                     fetchs = 0;
                 }
             } catch (InterruptedException e) {
-                LOG.error(e);
+                log.error(e);
             }
         }
     }

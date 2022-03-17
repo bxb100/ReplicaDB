@@ -23,6 +23,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.QuoteMode;
@@ -32,9 +33,8 @@ import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.rowset.CsvCachedRowSetImpl;
 
+@Log4j2
 public class CsvManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(CsvManager.class.getName());
 
     // String array with the paths of the temporal files
     private static String[] tempFilesPath;
@@ -111,51 +111,51 @@ public class CsvManager extends SqlManager {
             switch (predefinedFormats.toUpperCase().trim()) {
                 case "EXCEL":
                     csvFormat = CSVFormat.EXCEL;
-                    LOG.debug("Setting the initial format to EXCEL");
+                    log.debug("Setting the initial format to EXCEL");
                     break;
                 case "INFORMIX_UNLOAD":
                     csvFormat = CSVFormat.INFORMIX_UNLOAD;
-                    LOG.debug("Setting the initial format to INFORMIX_UNLOAD");
+                    log.debug("Setting the initial format to INFORMIX_UNLOAD");
                     break;
                 case "INFORMIX_UNLOAD_CSV":
                     csvFormat = CSVFormat.INFORMIX_UNLOAD_CSV;
-                    LOG.debug("Setting the initial format to INFORMIX_UNLOAD_CSV");
+                    log.debug("Setting the initial format to INFORMIX_UNLOAD_CSV");
                     break;
                 case "MONGODB_CSV":
                     csvFormat = CSVFormat.MONGODB_CSV;
-                    LOG.debug("Setting the initial format to MONGODB_CSV");
+                    log.debug("Setting the initial format to MONGODB_CSV");
                     break;
                 case "MONGODB_TSV":
                     csvFormat = CSVFormat.MONGODB_TSV;
-                    LOG.debug("Setting the initial format to MONGODB_TSV");
+                    log.debug("Setting the initial format to MONGODB_TSV");
                     break;
                 case "MYSQL":
                     csvFormat = CSVFormat.MYSQL;
-                    LOG.debug("Setting the initial format to MYSQL");
+                    log.debug("Setting the initial format to MYSQL");
                     break;
                 case "ORACLE":
                     csvFormat = CSVFormat.ORACLE;
-                    LOG.debug("Setting the initial format to ORACLE");
+                    log.debug("Setting the initial format to ORACLE");
                     break;
                 case "POSTGRESQL_CSV":
                     csvFormat = CSVFormat.POSTGRESQL_CSV;
-                    LOG.debug("Setting the initial format to POSTGRESQL_CSV");
+                    log.debug("Setting the initial format to POSTGRESQL_CSV");
                     break;
                 case "POSTGRESQL_TEXT":
                     csvFormat = CSVFormat.POSTGRESQL_TEXT;
-                    LOG.debug("Setting the initial format to POSTGRESQL_TEXT");
+                    log.debug("Setting the initial format to POSTGRESQL_TEXT");
                     break;
                 case "RFC4180":
                     csvFormat = CSVFormat.RFC4180;
-                    LOG.debug("Setting the initial format to RFC4180");
+                    log.debug("Setting the initial format to RFC4180");
                     break;
                 case "TDF":
                     csvFormat = CSVFormat.TDF;
-                    LOG.debug("Setting the initial format to TDF");
+                    log.debug("Setting the initial format to TDF");
                     break;
                 default:
                     csvFormat = CSVFormat.DEFAULT;
-                    LOG.debug("Setting the initial format to DEFAULT");
+                    log.debug("Setting the initial format to DEFAULT");
                     break;
             }
         }
@@ -166,23 +166,23 @@ public class CsvManager extends SqlManager {
             switch (quoteMode.toUpperCase().trim()) {
                 case "ALL":
                     csvFormat = csvFormat.withQuoteMode(QuoteMode.ALL);
-                    LOG.debug("Setting QuoteMode to ALL");
+                    log.debug("Setting QuoteMode to ALL");
                     break;
                 case "ALL_NON_NULL":
                     csvFormat = csvFormat.withQuoteMode(QuoteMode.ALL_NON_NULL);
-                    LOG.debug("Setting QuoteMode to ALL_NON_NULL");
+                    log.debug("Setting QuoteMode to ALL_NON_NULL");
                     break;
                 case "MINIMAL":
                     csvFormat = csvFormat.withQuoteMode(QuoteMode.MINIMAL);
-                    LOG.debug("Setting QuoteMode to MINIMAL");
+                    log.debug("Setting QuoteMode to MINIMAL");
                     break;
                 case "NON_NUMERIC":
                     csvFormat = csvFormat.withQuoteMode(QuoteMode.NON_NUMERIC);
-                    LOG.debug("Setting QuoteMode to NON_NUMERIC");
+                    log.debug("Setting QuoteMode to NON_NUMERIC");
                     break;
                 case "NONE":
                     csvFormat = csvFormat.withQuoteMode(QuoteMode.NONE);
-                    LOG.debug("Setting QuoteMode to NONE");
+                    log.debug("Setting QuoteMode to NONE");
                     break;
             }
         }
@@ -254,7 +254,7 @@ public class CsvManager extends SqlManager {
             csvFormat = csvFormat.withTrim(Boolean.parseBoolean(trim));
         }
 
-        LOG.info("The final CSVFormat is: " + csvFormat);
+        log.info("The final CSVFormat is: " + csvFormat);
         return csvFormat;
 
     }
@@ -278,7 +278,7 @@ public class CsvManager extends SqlManager {
 
         // Temporal file name
         String randomFileUrl = options.getSinkConnect() + ".repdb." + (new Random().nextInt(1000) + 9000);
-        LOG.info("Temp CSV file path: " + randomFileUrl);
+        log.info("Temp CSV file path: " + randomFileUrl);
 
         // Save the path of temp file
         tempFilesPath[taskId] = randomFileUrl;
@@ -345,9 +345,9 @@ public class CsvManager extends SqlManager {
             // Rename first temporal file to the final file
             Files.move(firstTemporalFilePath, firstTemporalFilePath.resolveSibling(finalFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
             tempFilesIdx = 1;
-            LOG.info("Complete mode: creating and merging all temp files into: " + finalFile.getPath());
+            log.info("Complete mode: creating and merging all temp files into: " + finalFile.getPath());
         } else {
-            LOG.info("Incremental mode: appending and merging all temp files into: " + finalFile.getPath());
+            log.info("Incremental mode: appending and merging all temp files into: " + finalFile.getPath());
         }
 
         // Append the rest temporal files into final file

@@ -9,16 +9,14 @@ import java.util.Arrays;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopyOptions;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
 
+@Log4j2
 public class SQLServerManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(SQLServerManager.class.getName());
-
-//    private static Long chunkSize;
 
     /**
      * Constructs the SqlManager.
@@ -43,7 +41,7 @@ public class SQLServerManager extends SqlManager {
         Statement stmt = this.getConnection().createStatement();
         String sqlCommand = "IF OBJECTPROPERTY(OBJECT_ID('" + tableName + "'), 'TableHasIdentity') = 1 " +
                 "SET IDENTITY_INSERT " + tableName + " " + valueToSetIdentity;
-        LOG.info(sqlCommand);
+        log.info(sqlCommand);
         stmt.executeUpdate(sqlCommand);
         stmt.close();
     }
@@ -80,19 +78,19 @@ public class SQLServerManager extends SqlManager {
                 String sinkColumns = getAllSinkColumns(rsmd);
                 // Remove quotes from column names, which are not supported by SQLServerBulkCopy
                 String[] sinkColumnsArray = sinkColumns.replace("\"", "").split(",");
-                LOG.trace("Mapping columns: source --> sink");
+                log.trace("Mapping columns: source --> sink");
                 for (int i = 1; i <= sinkColumnsArray.length; i++) {
                     bulkCopy.addColumnMapping(rsmd.getColumnName(i), sinkColumnsArray[i - 1]);
-                    LOG.trace("{} --> {}", rsmd.getColumnName(i), sinkColumnsArray[i - 1]);
+                    log.trace("{} --> {}", rsmd.getColumnName(i), sinkColumnsArray[i - 1]);
                 }
             } else {
                 for (int i = 1; i <= columnCount; i++) {
-                    LOG.trace("source {} - {} sink", rsmd.getColumnName(i), i);
+                    log.trace("source {} - {} sink", rsmd.getColumnName(i), i);
                     bulkCopy.addColumnMapping(rsmd.getColumnName(i), i);
                 }
             }
 
-            LOG.info("Perfoming BulkCopy into {} ", tableName);
+            log.info("Perfoming BulkCopy into {} ", tableName);
             // Write from the source to the destination.
             bulkCopy.writeToServer(resultSet);
         } catch (SQLServerException e) {
@@ -127,7 +125,7 @@ public class SQLServerManager extends SqlManager {
 
         String sql = " SELECT " + allSinkColumns + " INTO " + sinkStagingTable + " FROM " + this.getSinkTableName() + " WHERE 0 = 1 ";
 
-        LOG.info("Creating staging table with this command: " + sql);
+        log.info("Creating staging table with this command: " + sql);
         statement.executeUpdate(sql);
         statement.close();
         this.getConnection().commit();
@@ -164,10 +162,10 @@ public class SQLServerManager extends SqlManager {
         }
 
         sql.append(" ) WHEN MATCHED THEN UPDATE SET ");
-        LOG.trace("allColls: {} \n pks: {}", allColls, pks);
+        log.trace("allColls: {} \n pks: {}", allColls, pks);
         // Set all columns for UPDATE SET statement
         for (String colName : allColls.split("\\s*,\\s*")) {
-            LOG.trace("colName: {}", colName);
+            log.trace("colName: {}", colName);
             boolean contains = Arrays.asList(pks).contains(colName);
             boolean containsQuoted = Arrays.asList(pks).contains("\"" + colName + "\"");
             if (!contains && !containsQuoted)
@@ -189,7 +187,7 @@ public class SQLServerManager extends SqlManager {
 
         sql.append(" ); ");
 
-        LOG.info("Merging staging table and sink table with this command: " + sql);
+        log.info("Merging staging table and sink table with this command: " + sql);
         statement.executeUpdate(sql.toString());
         statement.close();
         this.getConnection().commit();

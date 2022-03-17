@@ -1,5 +1,6 @@
 package org.replicadb.file;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
+@Log4j2
 class Csv2PostgresTest {
-    private static final Logger LOG = LogManager.getLogger(Csv2PostgresTest.class);
     private static final String RESOURECE_DIR = Paths.get("src", "test", "resources").toFile().getAbsolutePath();
     private static final String REPLICADB_CONF_FILE = "/replicadb.conf";
     private static final String POSTGRES_SINK_FILE = "/sinks/pg-sink.sql";
@@ -54,7 +55,7 @@ class Csv2PostgresTest {
         Connection con = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
         ScriptRunner runner = new ScriptRunner(con, false, true);
         runner.runScript(new BufferedReader(new FileReader(RESOURECE_DIR + POSTGRES_SINK_FILE)));
-        LOG.info("Creating Postgres sink tables");
+        log.info("Creating Postgres sink tables");
         con.close();
     }
 
@@ -75,7 +76,7 @@ class Csv2PostgresTest {
         ResultSet rs = stmt.executeQuery("select count(*) from t_sink");
         rs.next();
         int count = rs.getInt(1);
-        LOG.info("Total rows in the sink table: {}", count);
+        log.info("Total rows in the sink table: {}", count);
         return count;
     }
 
@@ -85,7 +86,7 @@ class Csv2PostgresTest {
         ResultSet rs = stmt.executeQuery("SELECT 1");
         rs.next();
         String version = rs.getString(1);
-        LOG.info(version);
+        log.info(version);
         assertTrue(version.contains("1"));
     }
 

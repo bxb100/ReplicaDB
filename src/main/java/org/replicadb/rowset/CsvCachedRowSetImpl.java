@@ -14,14 +14,13 @@ import java.sql.Timestamp;
 import java.sql.Types;
 
 import com.sun.rowset.CachedRowSetImpl;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Log4j2
 public class CsvCachedRowSetImpl extends CachedRowSetImpl {
-    private static final Logger LOG = LogManager.getLogger(CsvCachedRowSetImpl.class.getName());
-    private static int lineNumer = 0;
+    private static int lineNumber = 0;
     private File sourceFile;
     private Iterable<CSVRecord> records;
     private String[] columnsTypes;
@@ -149,7 +148,7 @@ public class CsvCachedRowSetImpl extends CachedRowSetImpl {
         CSVRecord record;
 
         for (int i = 1; i <= getFetchSize(); i++) {
-            lineNumer++;
+            lineNumber++;
             try {
 
                 if (this.records.iterator().hasNext()) {
@@ -262,7 +261,7 @@ public class CsvCachedRowSetImpl extends CachedRowSetImpl {
                     insertRow();
                 }
             } catch (Exception e) {
-                LOG.error("An error has occurred reading line number " + lineNumer + " of the CSV file", e);
+                log.error("An error has occurred reading line number " + lineNumber + " of the CSV file", e);
                 throw e;
             }
         }

@@ -68,7 +68,7 @@ class Postgres2S3FileTest {
 //    @AfterEach
 //    void tearDown() throws SQLException {
 //        //File sinkFile = new File(URI.create(SINK_FILE_URI_PATH));
-//        //LOG.info("Deleted file: {}",sinkFile.delete());
+//        //log.info("Deleted file: {}",sinkFile.delete());
 //        this.postgresConn.close();
 //    }
 //
@@ -76,7 +76,7 @@ class Postgres2S3FileTest {
 //    public int countSinkRows() throws IOException {
 //       /* Path path = Paths.get(URI.create(SINK_FILE_URI_PATH));
 //        int count = (int) Files.lines(path).count();
-//        LOG.info("File total Rows:{}", count);*/
+//        log.info("File total Rows:{}", count);*/
 //        return 4097;
 //    }
 //

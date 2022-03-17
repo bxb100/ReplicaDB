@@ -1,5 +1,6 @@
 package org.replicadb.oracle;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,9 +23,9 @@ import java.util.TimeZone;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Log4j2
 @Testcontainers
 class Oracle2OracleSdoGeomTest {
-    private static final Logger LOG = LogManager.getLogger(Oracle2OracleSdoGeomTest.class);
     private static final String RESOURECE_DIR = Paths.get("src", "test", "resources").toFile().getAbsolutePath();
     private static final String REPLICADB_CONF_FILE = "/replicadb.conf";
     private static final String ORACLE_SOURCE_FILE = "/oracle/oracle-sdo_geometry.sql";
@@ -77,7 +78,7 @@ class Oracle2OracleSdoGeomTest {
         ResultSet rs = stmt.executeQuery("SELECT 1 FROM DUAL");
         rs.next();
         String version = rs.getString(1);
-        LOG.info(version);
+        log.info(version);
         assertTrue(version.contains("1"));
         oracleConn.close();
     }

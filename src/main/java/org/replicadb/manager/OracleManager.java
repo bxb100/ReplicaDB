@@ -14,15 +14,12 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.Arrays;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
 
-
+@Log4j2
 public class OracleManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(OracleManager.class.getName());
 
     public OracleManager(ToolOptions opts, DataSourceType dsType) {
         super(opts);
@@ -128,7 +125,7 @@ public class OracleManager extends SqlManager {
         final int batchSize = options.getFetchSize();
         int count = 0;
 
-        LOG.info("Inserting data with this command: " + sqlCdm);
+        log.info("Inserting data with this command: " + sqlCdm);
 
         oracleAlterSession(true);
 
@@ -273,7 +270,7 @@ public class OracleManager extends SqlManager {
 
         String sql = " CREATE TABLE " + sinkStagingTable + " NOLOGGING AS (SELECT " + allSinkColumns + " FROM " + this.getSinkTableName() + " WHERE rownum = -1 ) ";
 
-        LOG.info("Creating staging table with this command: " + sql);
+        log.info("Creating staging table with this command: " + sql);
         statement.executeUpdate(sql);
         statement.close();
         this.getConnection().commit();
@@ -339,7 +336,7 @@ public class OracleManager extends SqlManager {
 
         sql.append(" ) ");
 
-        LOG.info("Merging staging table and sink table with this command: " + sql);
+        log.info("Merging staging table and sink table with this command: " + sql);
         statement.executeUpdate(sql.toString());
         statement.close();
         this.getConnection().commit();

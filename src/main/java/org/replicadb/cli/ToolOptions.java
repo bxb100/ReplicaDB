@@ -3,6 +3,8 @@ package org.replicadb.cli;
 import java.io.IOException;
 import java.util.Properties;
 
+import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -10,12 +12,11 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+@Data
+@Log4j2
 public class ToolOptions {
 
-    private static final Logger LOG = LogManager.getLogger(ToolOptions.class.getName());
     private static final int DEFAULT_JOBS = 4;
     private static final int DEFAULT_FETCH_SIZE = 5000;
     private static final String DEFAULT_MODE = ReplicationMode.COMPLETE.getModeText();
@@ -47,9 +48,10 @@ public class ToolOptions {
     private int jobs = DEFAULT_JOBS;
     private int fetchSize = DEFAULT_FETCH_SIZE;
     private int bandwidthThrottling = 0;
-    private Boolean help = false;
-    private Boolean version = false;
-    private Boolean verbose = false;
+    private boolean help = false;
+    // FIXME: change name
+    private boolean versionCheck = false;
+    private boolean verbose = false;
     private Boolean quotedIdentifiers = false;
     private String optionsFile;
 
@@ -329,7 +331,7 @@ public class ToolOptions {
             printHelp();
             this.setHelp(true);
         } else if (existsVersionArgument(args)) {
-            this.setVersion(true);
+            this.setVersionCheck(true);
         } else {
             // parse the command line arguments
             CommandLine line = parser.parse(options, args);
@@ -341,16 +343,24 @@ public class ToolOptions {
             }
 
             //get & set Options
-            if (line.hasOption("verbose")) setVerbose(true);
-            if (line.hasOption("sink-disable-index"))
-                setSinkDisableIndexNotNull(true);
-            if (line.hasOption("sink-disable-escape"))
-                setSinkDisableEscapeNotNull(true);
-            if (line.hasOption("sink-disable-truncate"))
-                setSinkDisableTruncateNotNull(true);
-            if (line.hasOption("sink-analyze")) setSinkAnalyzeNotNull(true);
-            if (line.hasOption("quoted-identifiers"))
-                setQuotedIdentifiers(true);
+            if (line.hasOption("verbose")) {
+                enableVerbose();
+            }
+            if (line.hasOption("sink-disable-index")) {
+                enableSinkDisableIndex();
+            }
+            if (line.hasOption("sink-disable-escape")) {
+                enableSinkDisableEscape();
+            }
+            if (line.hasOption("sink-disable-truncate")) {
+                enableSinkDisableTruncate();
+            }
+            if (line.hasOption("sink-analyze")) {
+                enableSinkAnalyze();
+            }
+            if (line.hasOption("quoted-identifiers")) {
+                enableQuotedIdentifiers();
+            }
 
             setModeNotNull(line.getOptionValue("mode"));
             setSinkColumnsNotNull(line.getOptionValue("sink-columns"));
@@ -394,7 +404,7 @@ public class ToolOptions {
         formatter.printHelp("replicadb [OPTIONS]", header, this.options, footer, false);
     }
 
-    private Boolean existsHelpArgument(String[] args) {
+    private boolean existsHelpArgument(String[] args) {
         //help argument is -h or --help
         for (int i = 0; i <= args.length - 1; i++) {
             if (args[i].equals("-h") || args[i].equals("--help")) {
@@ -404,7 +414,7 @@ public class ToolOptions {
         return false;
     }
 
-    private Boolean existsVersionArgument(String[] args) {
+    private boolean existsVersionArgument(String[] args) {
         //help argument is -h or --help
         for (int i = 0; i <= args.length - 1; i++) {
             if (args[i].equals("--version")) {
@@ -418,16 +428,7 @@ public class ToolOptions {
         return ToolOptions.class.getPackage().getImplementationVersion();
     }
 
-    public void setVersion(Boolean version) {
-        this.version = version;
-    }
-
-    public Boolean isVersion() {
-        return version;
-    }
-
-    public Boolean checkRequiredValues() {
-
+    public boolean checkRequiredValues() {
 
         if (this.mode == null) return false;
         if (this.sourceConnect == null) return false;
@@ -477,27 +478,11 @@ public class ToolOptions {
     }
 
     /*
-     * Geeters & Setters
+     * Getters & Setters
      */
-    public String getSourceConnect() {
-        return sourceConnect;
-    }
-
-    public void setSourceConnect(String sourceConnect) {
-        this.sourceConnect = sourceConnect;
-    }
-
     private void setSourceConnectNotNull(String sourceConnect) {
         if (sourceConnect != null && !sourceConnect.isEmpty())
             this.sourceConnect = sourceConnect;
-    }
-
-    public String getSourceUser() {
-        return sourceUser;
-    }
-
-    public void setSourceUser(String sourceUser) {
-        this.sourceUser = sourceUser;
     }
 
     public void setSourceUserNotNull(String sourceUser) {
@@ -505,25 +490,9 @@ public class ToolOptions {
             this.sourceUser = sourceUser;
     }
 
-    public String getSourcePassword() {
-        return sourcePassword;
-    }
-
-    public void setSourcePassword(String sourcePassword) {
-        this.sourcePassword = sourcePassword;
-    }
-
     public void setSourcePasswordNotNull(String sourcePassword) {
         if (sourcePassword != null && !sourcePassword.isEmpty())
             this.sourcePassword = sourcePassword;
-    }
-
-    public String getSourceTable() {
-        return sourceTable;
-    }
-
-    public void setSourceTable(String sourceTable) {
-        this.sourceTable = sourceTable;
     }
 
     public void setSourceTableNotNull(String sourceTable) {
@@ -531,25 +500,9 @@ public class ToolOptions {
             this.sourceTable = sourceTable;
     }
 
-    public String getSourceColumns() {
-        return sourceColumns;
-    }
-
-    public void setSourceColumns(String sourceColumns) {
-        this.sourceColumns = sourceColumns;
-    }
-
     public void setSourceColumnsNotNull(String sourceColumns) {
         if (sourceColumns != null && !sourceColumns.isEmpty())
             this.sourceColumns = sourceColumns;
-    }
-
-    public String getSourceWhere() {
-        return sourceWhere;
-    }
-
-    public void setSourceWhere(String sourceWhere) {
-        this.sourceWhere = sourceWhere;
     }
 
     public void setSourceWhereNotNull(String sourceWhere) {
@@ -557,25 +510,9 @@ public class ToolOptions {
             this.sourceWhere = sourceWhere;
     }
 
-    public String getSourceQuery() {
-        return sourceQuery;
-    }
-
-    public void setSourceQuery(String sourceQuery) {
-        this.sourceQuery = sourceQuery;
-    }
-
     public void setSourceQueryNotNull(String sourceQuery) {
         if (sourceQuery != null && !sourceQuery.isEmpty())
             this.sourceQuery = sourceQuery;
-    }
-
-    public String getSinkConnect() {
-        return sinkConnect;
-    }
-
-    public void setSinkConnect(String sinkConnect) {
-        this.sinkConnect = sinkConnect;
     }
 
     public void setSinkConnectNotNull(String sinkConnect) {
@@ -583,25 +520,9 @@ public class ToolOptions {
             this.sinkConnect = sinkConnect;
     }
 
-    public String getSinkUser() {
-        return sinkUser;
-    }
-
-    public void setSinkUser(String sinkUser) {
-        this.sinkUser = sinkUser;
-    }
-
     public void setSinkUserNotNull(String sinkUser) {
         if (sinkUser != null && !sinkUser.isEmpty())
             this.sinkUser = sinkUser;
-    }
-
-    public String getSinkPassword() {
-        return sinkPassword;
-    }
-
-    public void setSinkPassword(String sinkPassword) {
-        this.sinkPassword = sinkPassword;
     }
 
     public void setSinkPasswordNotNull(String sinkPassword) {
@@ -609,49 +530,14 @@ public class ToolOptions {
             this.sinkPassword = sinkPassword;
     }
 
-    public String getSinkTable() {
-        return sinkTable;
-    }
-
-    public void setSinkTable(String sinkTable) {
-        this.sinkTable = sinkTable;
-    }
-
     public void setSinkTableNotNull(String sinkTable) {
         if (sinkTable != null && !sinkTable.isEmpty())
             this.sinkTable = sinkTable;
     }
 
-    public String getSinkColumns() {
-        return sinkColumns;
-    }
-
-    public void setSinkColumns(String sinkColumns) {
-        this.sinkColumns = sinkColumns;
-    }
-
     public void setSinkColumnsNotNull(String sinkColumns) {
         if (sinkColumns != null && !sinkColumns.isEmpty())
             this.sinkColumns = sinkColumns;
-    }
-
-
-    public Boolean getSinkDisableIndex() {
-        return sinkDisableIndex;
-    }
-
-    public void setSinkDisableIndex(Boolean sinkDisableIndex) {
-        this.sinkDisableIndex = sinkDisableIndex;
-    }
-
-    public void setSinkDisableIndexNotNull(Boolean sinkDisableIndex) {
-        if (sinkDisableIndex != null)
-            this.sinkDisableIndex = sinkDisableIndex;
-    }
-
-
-    public int getJobs() {
-        return jobs;
     }
 
     public void setJobs(String jobs) {
@@ -661,7 +547,7 @@ public class ToolOptions {
                 if (this.jobs <= 0) throw new NumberFormatException();
             }
         } catch (NumberFormatException | NullPointerException e) {
-            LOG.error("Option --jobs must be a positive integer grater than 0.");
+            log.error("Option --jobs must be a positive integer grater than 0.");
             throw e;
         }
     }
@@ -669,40 +555,6 @@ public class ToolOptions {
     public void setJobsNotNull(String jobs) {
         if (jobs != null && !jobs.isEmpty())
             setJobs(jobs);
-    }
-
-    public Boolean isHelp() {
-        return help;
-    }
-
-    public void setHelp(Boolean help) {
-        this.help = help;
-    }
-
-
-    public Boolean isVerbose() {
-        return verbose;
-    }
-
-    public void setVerbose(Boolean verbose) {
-        this.verbose = verbose;
-    }
-
-    public void setVerboseNotNull(Boolean verbose) {
-        if (verbose != null)
-            this.verbose = verbose;
-    }
-
-    public String getOptionsFile() {
-        return optionsFile;
-    }
-
-    public void setOptionsFile(String optionsFile) {
-        this.optionsFile = optionsFile;
-    }
-
-    public String getMode() {
-        return mode;
     }
 
     public void setMode(String mode) {
@@ -734,69 +586,28 @@ public class ToolOptions {
             setMode(mode);
     }
 
-    public Boolean isSinkDisableEscape() {
-        return sinkDisableEscape;
+    public void enableVerbose() {
+        this.verbose = true;
     }
 
-    public void setSinkDisableEscape(Boolean sinkDisableEscape) {
-        this.sinkDisableEscape = sinkDisableEscape;
+    public void enableSinkDisableIndex() {
+        this.sinkDisableIndex = true;
     }
 
-    public void setSinkDisableEscapeNotNull(Boolean sinkDisableEscape) {
-        if (sinkDisableEscape != null)
-            this.sinkDisableEscape = sinkDisableEscape;
+    public void enableSinkDisableEscape() {
+        this.sinkDisableEscape = true;
     }
 
-    public Boolean isSinkDisableTruncate() {
-        return sinkDisableTruncate;
+    private void enableSinkDisableTruncate() {
+        this.sinkDisableTruncate = true;
     }
 
-    public void setSinkDisableTruncate(Boolean sinkDisableTruncate) {
-        this.sinkDisableTruncate = sinkDisableTruncate;
+    public void enableSinkAnalyze() {
+        this.sinkAnalyze = true;
     }
 
-    private void setSinkDisableTruncateNotNull(Boolean sinkDisableTruncate) {
-        if (sinkDisableTruncate != null)
-            this.sinkDisableTruncate = sinkDisableTruncate;
-    }
-
-
-    public Boolean getSinkAnalyze() {
-        return sinkAnalyze;
-    }
-
-    public void setSinkAnalyze(Boolean sinkAnalyze) {
-        this.sinkAnalyze = sinkAnalyze;
-    }
-
-    public void setSinkAnalyzeNotNull(Boolean sinkAnalyze) {
-        if (sinkAnalyze != null)
-            this.sinkAnalyze = sinkAnalyze;
-    }
-
-    public Properties getSourceConnectionParams() {
-        return sourceConnectionParams;
-    }
-
-    public void setSourceConnectionParams(Properties sourceConnectionParams) {
-        this.sourceConnectionParams = sourceConnectionParams;
-    }
-
-    public Properties getSinkConnectionParams() {
-        return sinkConnectionParams;
-    }
-
-    public void setSinkConnectionParams(Properties sinkConnectionParams) {
-        this.sinkConnectionParams = sinkConnectionParams;
-    }
-
-
-    public String getSinkStagingTable() {
-        return sinkStagingTable;
-    }
-
-    public void setSinkStagingTable(String sinkStagingTable) {
-        this.sinkStagingTable = sinkStagingTable;
+    public void enableQuotedIdentifiers() {
+        this.quotedIdentifiers = true;
     }
 
     public void setSinkStagingTableNotNull(String sinkStagingTable) {
@@ -804,35 +615,15 @@ public class ToolOptions {
             this.sinkStagingTable = sinkStagingTable;
     }
 
-
-    public String getSinkStagingTableAlias() {
-        return sinkStagingTableAlias;
-    }
-
-    public void setSinkStagingTableAlias(String sinkStagingTableAlias) {
-        this.sinkStagingTableAlias = sinkStagingTableAlias;
-    }
-
     public void setSinkStagingTableAliasNotNull(String sinkStagingTableAlias) {
         if (sinkStagingTableAlias != null)
             this.sinkStagingTableAlias = sinkStagingTableAlias;
     }
 
-    public String getSinkStagingSchema() {
-        return sinkStagingSchema;
-    }
-
-    public void setSinkStagingSchema(String sinkStagingSchema) {
-        this.sinkStagingSchema = sinkStagingSchema;
-    }
 
     public void setSinkStagingSchemaNotNull(String sinkStagingSchema) {
         if (sinkStagingSchema != null)
             this.sinkStagingSchema = sinkStagingSchema;
-    }
-
-    public int getFetchSize() {
-        return fetchSize;
     }
 
     public void setFetchSize(String fetchSize) {
@@ -842,7 +633,7 @@ public class ToolOptions {
                 if (this.fetchSize <= 0) throw new NumberFormatException();
             }
         } catch (NumberFormatException | NullPointerException e) {
-            LOG.error("Option --fetch-size must be a positive integer grater than 0.");
+            log.error("Option --fetch-size must be a positive integer grater than 0.");
             throw e;
         }
 
@@ -853,50 +644,6 @@ public class ToolOptions {
             setFetchSize(fetchSize);
     }
 
-    @Override
-    public String toString() {
-        return "ToolOptions{" +
-                " \n\tsourceConnect='" + sourceConnect + '\'' +
-                ",\n\tsourceUser='" + sourceUser + '\'' +
-                ",\n\tsourcePassword='" + (sourcePassword != null ? "****" : "null") + '\'' +
-                ",\n\tsourceTable='" + sourceTable + '\'' +
-                ",\n\tsourceColumns='" + sourceColumns + '\'' +
-                ",\n\tsourceWhere='" + sourceWhere + '\'' +
-                ",\n\tsourceQuery='" + sourceQuery + '\'' +
-                ",\n\tsinkConnect='" + sinkConnect + '\'' +
-                ",\n\tsinkUser='" + sinkUser + '\'' +
-                ",\n\tsinkPassword='" + (sinkPassword != null ? "****" : "null") + '\'' +
-                ",\n\tsinkTable='" + sinkTable + '\'' +
-                ",\n\tsinkStagingTable='" + sinkStagingTable + '\'' +
-                ",\n\tsinkStagingSchema='" + sinkStagingSchema + '\'' +
-                ",\n\tsinkStagingTableAlias='" + sinkStagingTableAlias + '\'' +
-                ",\n\tsinkColumns='" + sinkColumns + '\'' +
-                ",\n\tsinkDisableEscape=" + sinkDisableEscape +
-                ",\n\tsinkDisableIndex=" + sinkDisableIndex +
-                ",\n\tsinkDisableTruncate=" + sinkDisableTruncate +
-                ",\n\tsinkAnalyze=" + sinkAnalyze +
-                ",\n\tjobs=" + jobs +
-                ",\n\tBandwidthThrottling=" + bandwidthThrottling +
-                ",\n\tquotedIdentifiers=" + quotedIdentifiers +
-                ",\n\tfetchSize=" + fetchSize +
-                ",\n\thelp=" + help +
-                ",\n\tversion=" + version +
-                ",\n\tverbose=" + verbose +
-                ",\n\toptionsFile='" + optionsFile + '\'' +
-                ",\n\tmode='" + mode + '\'' +
-                ",\n\tsentryDsn='" + sentryDsn + '\'' +
-                ",\n\tsourceConnectionParams=" + sourceConnectionParams +
-                ",\n\tsinkConnectionParams=" + sinkConnectionParams +
-                ",\n\tsourceFileFormat='" + sourceFileFormat + '\'' +
-                ",\n\tsinkFileformat='" + sinkFileformat + '\'' +
-                '}';
-    }
-
-
-    public int getBandwidthThrottling() {
-        return bandwidthThrottling;
-    }
-
     public void setBandwidthThrottling(String bandwidthThrottling) {
         try {
             if (bandwidthThrottling != null && !bandwidthThrottling.isEmpty()) {
@@ -905,7 +652,7 @@ public class ToolOptions {
                     throw new NumberFormatException();
             }
         } catch (NumberFormatException | NullPointerException e) {
-            LOG.error("Option --bandwidth-throttling must be a positive integer grater than 0.");
+            log.error("Option --bandwidth-throttling must be a positive integer grater than 0.");
             throw e;
         }
     }
@@ -915,46 +662,13 @@ public class ToolOptions {
             setBandwidthThrottling(bandwidthThrottling);
     }
 
-    public Boolean getQuotedIdentifiers() {
-        return quotedIdentifiers;
-    }
-
-    public void setQuotedIdentifiers(Boolean quotedIdentifiers) {
-        this.quotedIdentifiers = quotedIdentifiers;
-    }
-
-    public String getSourceFileFormat() {
-        return sourceFileFormat;
-    }
-
-    public void setSourceFileFormat(String sourceFileFormat) {
-        this.sourceFileFormat = sourceFileFormat;
-    }
-
     private void setSourceFileFormatNotNull(String fileFormat) {
         if (fileFormat != null && !fileFormat.isEmpty())
             this.sourceFileFormat = fileFormat;
-    }
-
-    public String getSinkFileformat() {
-        return sinkFileformat;
-    }
-
-    public void setSinkFileformat(String sinkFileformat) {
-        this.sinkFileformat = sinkFileformat;
     }
 
     private void setSinkFileFormatNotNull(String fileFormat) {
         if (fileFormat != null && !fileFormat.isEmpty())
             this.sinkFileformat = fileFormat;
     }
-
-    public String getSentryDsn() {
-        return sentryDsn;
-    }
-
-    public void setSentryDsn(String sentryDsn) {
-        this.sentryDsn = sentryDsn;
-    }
-
 }

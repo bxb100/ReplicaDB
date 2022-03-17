@@ -4,13 +4,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 
+@Log4j2
 public class DenodoManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(DenodoManager.class.getName());
 
     private static Long chunkSize = 0L;
 
@@ -125,12 +125,12 @@ public class DenodoManager extends SqlManager {
                 }
             }
 
-            LOG.debug("Calculating the chunks size with this sql: " + sql);
+            log.debug("Calculating the chunks size with this sql: " + sql);
             ResultSet rs = statement.executeQuery(sql);
             rs.next();
             chunkSize = rs.getLong(1);
             long totalNumberRows = rs.getLong(2);
-            LOG.debug("chunkSize: " + chunkSize + " totalNumberRows: " + totalNumberRows);
+            log.debug("chunkSize: " + chunkSize + " totalNumberRows: " + totalNumberRows);
 
             statement.close();
             this.getConnection().commit();

@@ -21,15 +21,16 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.file.FileManager;
 import org.replicadb.manager.file.FileManagerFactory;
 
+@Log4j2
 public class S3Manager extends SqlManager {
 
-    private static final Logger LOG = LogManager.getLogger(S3Manager.class.getName());
     private final FileManager fileManager;
     private String accessKey;
     private String secretKey;
@@ -189,7 +190,7 @@ public class S3Manager extends SqlManager {
         }
 
         serviceEndpoint = serviceEndpoint + s3Uri.getHost() + servicePort;
-        LOG.debug("Using serviceEndpoint: {}", serviceEndpoint);
+        log.debug("Using serviceEndpoint: {}", serviceEndpoint);
 
         // Get Bucket name
         String bucketName = s3Uri.getPath().replaceAll("/$", "");
@@ -197,7 +198,7 @@ public class S3Manager extends SqlManager {
             this.keyFileName = bucketName.substring(bucketName.lastIndexOf("/") + 1);
             bucketName = bucketName.replace(keyFileName, "").replaceAll("/$", "");
         }
-        LOG.info("Bucket Name: {}, File Name: {}", bucketName, keyFileName);
+        log.info("Bucket Name: {}, File Name: {}", bucketName, keyFileName);
 
         // S3 Client
         System.setProperty(SDKGlobalConfiguration.DISABLE_CERT_CHECKING_SYSTEM_PROPERTY, "true");

@@ -1,5 +1,6 @@
 package org.replicadb.postgres;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -31,9 +32,9 @@ import java.util.Properties;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Log4j2
 @Testcontainers
 class Postgres2OrcFileTest {
-    private static final Logger LOG = LogManager.getLogger(Postgres2OrcFileTest.class);
     private static final String RESOURECE_DIR = Paths.get("src", "test", "resources").toFile().getAbsolutePath();
     private static final String REPLICADB_CONF_FILE = "/replicadb.conf";
     private static final String POSTGRES_SOURCE_FILE = "/postgres/pg-source.sql";
@@ -83,7 +84,7 @@ class Postgres2OrcFileTest {
         Path path = new Path(sinkFile.getPath());
         Reader reader = OrcFile.createReader(path,OrcFile.readerOptions(new Configuration(true)));
         int count = (int) reader.getNumberOfRows();
-        LOG.info("File total Rows:{}", count);
+        log.info("File total Rows:{}", count);
         return count;
     }
 

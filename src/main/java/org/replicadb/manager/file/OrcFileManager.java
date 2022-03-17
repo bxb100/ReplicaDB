@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -38,8 +39,6 @@ import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.orc.CompressionKind;
 import org.apache.orc.OrcConf;
 import org.apache.orc.OrcFile;
@@ -56,8 +55,8 @@ import static org.replicadb.manager.LocalFileManager.getFileFromPathString;
 /**
  * This class manages the reading and writing ORC files.
  */
+@Log4j2
 public class OrcFileManager extends FileManager {
-    private static final Logger LOG = LogManager.getLogger(OrcFileManager.class);
 
     private OrcCachedRowSetImpl orcResultset;
 
@@ -81,11 +80,11 @@ public class OrcFileManager extends FileManager {
         try {
             retCodec = CompressionKind.valueOf(codec);
         } catch (IllegalArgumentException e) {
-            LOG.warn("Unable to determine compression codec {}, using ZLIB instead", codec);
+            log.warn("Unable to determine compression codec {}, using ZLIB instead", codec);
             retCodec = CompressionKind.valueOf("ZLIB");
         }
 
-        LOG.info("Setting the compression codec to: {}", retCodec.toString());
+        log.info("Setting the compression codec to: {}", retCodec.toString());
         return retCodec;
     }
 
@@ -225,7 +224,7 @@ public class OrcFileManager extends FileManager {
         int columnCount = rsmd.getColumnCount();
 
         for (int i = 1; i <= columnCount; i++) {
-            //LOG.info("columnName: {}, columnTypeName: {}, CassName: {}, sql.Type:{}", rsmd.getColumnName(i), rsmd.getColumnTypeName(i),rsmd.getColumnClassName(i), rsmd.getColumnType(i) );
+            //log.info("columnName: {}, columnTypeName: {}, CassName: {}, sql.Type:{}", rsmd.getColumnName(i), rsmd.getColumnTypeName(i),rsmd.getColumnClassName(i), rsmd.getColumnType(i) );
             switch (rsmd.getColumnType(i)) {
                 case Types.CHAR:
                     schema.addField(rsmd.getColumnName(i), TypeDescription.createChar().withMaxLength(rsmd.getPrecision(i)));
@@ -308,7 +307,7 @@ public class OrcFileManager extends FileManager {
 
         // Create the schemas and extract metadata from the schema
         TypeDescription schema = typeDescriptionFromResultSet(resultSet);
-        LOG.info("Sink ORC type description: {} ", schema.toString());
+        log.info("Sink ORC type description: {} ", schema.toString());
 
         // Create a row batch
         VectorizedRowBatch batch = schema.createRowBatch();
@@ -361,7 +360,7 @@ public class OrcFileManager extends FileManager {
         writer.close();
 
         // finally return the ORC file inside OutputStream
-        LOG.debug("ORC file generated into {}", tempFile.getPath());
+        log.debug("ORC file generated into {}", tempFile.getPath());
         IOUtils.copy(FileUtils.openInputStream(tempFile), out);
         return processedRows;
     }
@@ -369,12 +368,12 @@ public class OrcFileManager extends FileManager {
     private File createTemporalFile(int taskId) {
         try {
             java.nio.file.Path temp = Files.createTempFile("repdb", ".orc");
-            LOG.info("Temporal file path: " + temp.toAbsolutePath());
+            log.info("Temporal file path: " + temp.toAbsolutePath());
             // Save the path of temp file
             setTempFilePath(taskId, temp.toAbsolutePath().toString());
             return temp.toFile();
         } catch (IOException e) {
-            LOG.error(e);
+            log.error(e);
         }
         return null;
     }
@@ -389,14 +388,14 @@ public class OrcFileManager extends FileManager {
             // Rename first temporal file to the final file
             File firstTemporalFile = getFileFromPathString(getTempFilePath(0));
             String crcFile = "file://" + firstTemporalFile.getParent() + "/." + firstTemporalFile.getName() + ".crc";
-            LOG.debug("The crc file: {}", crcFile);
+            log.debug("The crc file: {}", crcFile);
             getFileFromPathString(crcFile).delete();
 
             Files.move(firstTemporalFile.toPath(), firstTemporalFile.toPath().resolveSibling(finalFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
             tempFilesIdx = 1;
-            LOG.info("Complete mode: creating and merging all temp files into: " + finalFile.getPath());
+            log.info("Complete mode: creating and merging all temp files into: " + finalFile.getPath());
         } else {
-            LOG.info("Incremental mode: appending and merging all temp files into: " + finalFile.getPath());
+            log.info("Incremental mode: appending and merging all temp files into: " + finalFile.getPath());
             // The final file must exist
             if (!finalFile.exists()) finalFile.createNewFile();
         }
@@ -405,7 +404,7 @@ public class OrcFileManager extends FileManager {
         conf.set(OrcConf.OVERWRITE_OUTPUT_FILE.getAttribute(), "true");
 
         for (int i = tempFilesIdx; i <= getTempFilePathSize() - 1; i++) {
-            LOG.debug("tempFilesPath.get({}): {}", i, getTempFilePath(i));
+            log.debug("tempFilesPath.get({}): {}", i, getTempFilePath(i));
             File tempFile = getFileFromPathString(getTempFilePath(i));
             Path tempFilePath = new Path(tempFile.toPath().toUri());
             List<Path> filesToMerge = new ArrayList<>();
@@ -417,7 +416,7 @@ public class OrcFileManager extends FileManager {
             File mergeFile = getFileFromPathString(mergeFilePathString);
             if (!mergeFile.exists()) mergeFile.createNewFile();
 
-            LOG.debug("Merge temp file : {} into : {}", tempFilePath.toUri(), finalFile.toPath().toUri());
+            log.debug("Merge temp file : {} into : {}", tempFilePath.toUri(), finalFile.toPath().toUri());
             // Merge files
             OrcFile.mergeFiles(mergedFilePath, OrcFile.writerOptions(conf), filesToMerge);
 
@@ -448,15 +447,15 @@ public class OrcFileManager extends FileManager {
                 String crcPath = "file://" + tempFile.getParent() + "/." + tempFile.getName() + ".crc";
                 crcFile = getFileFromPathString(crcPath);
             } catch (MalformedURLException | URISyntaxException e) {
-                LOG.error(e);
+                log.error(e);
             }
 
             if (tempFile.exists()) {
-                LOG.debug("Remove temp file {}", tempFile.getPath());
+                log.debug("Remove temp file {}", tempFile.getPath());
                 tempFile.delete();
             }
             if (crcFile.exists()) {
-                LOG.debug("Remove crc temp file {}", crcFile.getPath());
+                log.debug("Remove crc temp file {}", crcFile.getPath());
                 crcFile.delete();
             }
         }

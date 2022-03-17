@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.postgresql.copy.CopyIn;
@@ -17,9 +18,8 @@ import org.postgresql.jdbc.PgConnection;
 import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
 
+@Log4j2
 public class PostgresqlManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(PostgresqlManager.class.getName());
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -108,7 +108,7 @@ public class PostgresqlManager extends SqlManager {
                     }
 
                     // Escape special chars
-                    if (this.options.isSinkDisableEscape())
+                    if (this.options.getSinkDisableEscape())
                         row.append(cols.toString().replace("\u0000", "\\N"));
                     else
                         row.append(cols.toString().replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r").replace("\u0000", "\\N"));
@@ -163,7 +163,7 @@ public class PostgresqlManager extends SqlManager {
 
         copyCmd.append(" FROM STDIN WITH DELIMITER e'\\x1f' ENCODING 'UTF-8' ");
 
-        LOG.info("Copying data with this command: " + copyCmd);
+        log.info("Copying data with this command: " + copyCmd);
 
         return copyCmd.toString();
     }
@@ -222,7 +222,7 @@ public class PostgresqlManager extends SqlManager {
 
             String sql = "CREATE UNLOGGED TABLE IF NOT EXISTS " + sinkStagingTable + " ( LIKE " + this.getSinkTableName() + " INCLUDING DEFAULTS INCLUDING CONSTRAINTS ) WITH (autovacuum_enabled=false)";
 
-            LOG.info("Creating staging table with this command: " + sql);
+            log.info("Creating staging table with this command: " + sql);
             statement.executeUpdate(sql);
             statement.close();
             this.getConnection().commit();
@@ -271,7 +271,7 @@ public class PostgresqlManager extends SqlManager {
             // Delete the last comma
             sql.setLength(sql.length() - 1);
 
-            LOG.info("Merging staging table and sink table with this command: " + sql);
+            log.info("Merging staging table and sink table with this command: " + sql);
             statement.executeUpdate(sql.toString());
             statement.close();
             this.getConnection().commit();
@@ -312,12 +312,12 @@ public class PostgresqlManager extends SqlManager {
                     }
                 }
 
-                LOG.debug("Calculating the chunks size with this sql: " + sql);
+                log.debug("Calculating the chunks size with this sql: " + sql);
                 ResultSet rs = statement.executeQuery(sql);
                 rs.next();
                 chunkSize = rs.getLong(1);
                 long totalNumberRows = rs.getLong(2);
-                LOG.debug("chunkSize: " + chunkSize + " totalNumberRows: " + totalNumberRows);
+                log.debug("chunkSize: " + chunkSize + " totalNumberRows: " + totalNumberRows);
 
                 statement.close();
                 this.getConnection().commit();

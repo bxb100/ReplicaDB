@@ -13,6 +13,7 @@ import java.sql.Types;
 import java.util.Properties;
 
 import com.mysql.cj.jdbc.JdbcPreparedStatement;
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.mariadb.jdbc.MariaDbStatement;
@@ -20,9 +21,8 @@ import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.util.BandwidthThrottling;
 
+@Log4j2
 public class MySQLManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(MySQLManager.class.getName());
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
     private static Long chunkSize = 0L;
@@ -127,7 +127,7 @@ public class MySQLManager extends SqlManager {
                     }
 
                     // Escape special chars
-                    if (this.options.isSinkDisableEscape())
+                    if (this.options.getSinkDisableEscape())
                         row.append(cols.toString()
                                 .replace("\u0000", "\\N") // MySQL localInfile Null value
                         );
@@ -197,7 +197,7 @@ public class MySQLManager extends SqlManager {
             loadDataSql.append(")");
         }
 
-        LOG.info("Loading data with this command: {}", loadDataSql);
+        log.info("Loading data with this command: {}", loadDataSql);
         return loadDataSql.toString();
     }
 
@@ -218,7 +218,7 @@ public class MySQLManager extends SqlManager {
 
         String sql = " CREATE TABLE " + sinkStagingTable + " AS (SELECT " + allSinkColumns + " FROM " + this.getSinkTableName() + " WHERE 1 = 0 ) ";
 
-        LOG.info("Creating staging table with this command: " + sql);
+        log.info("Creating staging table with this command: " + sql);
         statement.executeUpdate(sql);
         statement.close();
         this.getConnection().commit();
@@ -257,7 +257,7 @@ public class MySQLManager extends SqlManager {
             // Delete the last comma
             sql.setLength(sql.length() - 1);
 
-            LOG.info("Merging staging table and sink table with this command: " + sql);
+            log.info("Merging staging table and sink table with this command: " + sql);
             statement.executeUpdate(sql.toString());
             statement.close();
             this.getConnection().commit();
@@ -338,12 +338,12 @@ public class MySQLManager extends SqlManager {
                 }
             }
 
-            LOG.debug("Calculating the chunks size with this sql: " + sql);
+            log.debug("Calculating the chunks size with this sql: " + sql);
             ResultSet rs = statement.executeQuery(sql);
             rs.next();
             chunkSize = rs.getLong(1);
             long totalNumberRows = rs.getLong(2);
-            LOG.debug("chunkSize: " + chunkSize + " totalNumberRows: " + totalNumberRows);
+            log.debug("chunkSize: " + chunkSize + " totalNumberRows: " + totalNumberRows);
 
             statement.close();
             this.getConnection().commit();

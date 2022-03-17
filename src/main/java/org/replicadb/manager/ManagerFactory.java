@@ -1,5 +1,6 @@
 package org.replicadb.manager;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ReplicationMode;
@@ -23,9 +24,8 @@ import static org.replicadb.manager.SupportedManagers.SQLSERVER;
  * calls the accept() method of each ManagerFactory, in order until
  * one such call returns a non-null ConnManager instance.
  */
+@Log4j2
 public class ManagerFactory {
-
-    private static final Logger LOG = LogManager.getLogger(ManagerFactory.class.getName());
 
     /**
      * Instantiate a ConnManager that can fulfill the database connection
@@ -44,14 +44,14 @@ public class ManagerFactory {
         if (null == scheme) {
             // We don't know if this is a mysql://, hsql://, etc.
             // Can't do anything with this.
-            LOG.warn("Null scheme associated with connect string.");
+            log.warn("Null scheme associated with connect string.");
             return null;
         }
 
-        LOG.trace("Trying with scheme: " + scheme);
+        log.trace("Trying with scheme: " + scheme);
 
         if (options.getMode().equals(ReplicationMode.CDC.getModeText())) {
-            LOG.debug("CDC Managers");
+            log.debug("CDC Managers");
 
             if (SQLSERVER.isTheManagerTypeOf(options, dsType)) {
                 return new SQLServerManagerCDC(options, dsType);

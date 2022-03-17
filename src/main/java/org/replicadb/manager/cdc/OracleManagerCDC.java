@@ -15,23 +15,21 @@ import java.util.stream.Collectors;
 import io.debezium.data.Envelope;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.RecordChangeEvent;
+import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.source.SourceRecord;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.OracleManager;
 import org.replicadb.time.Conversions;
 
+@Log4j2
 public class OracleManagerCDC extends OracleManager implements DebeziumEngine.ChangeConsumer<RecordChangeEvent<SourceRecord>> {
 
-    private static final Logger LOG = LogManager.getLogger(OracleManagerCDC.class.getName());
-
-    private static PreparedStatement batchPS = null;
     private static final HashMap<String, String> mappingSourceSinkTables = new HashMap<>();
+    private static PreparedStatement batchPS = null;
 
     /**
      * Constructs the SqlManager.
@@ -50,7 +48,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
             stmt.executeUpdate("ALTER SESSION DISABLE PARALLEL DML");
             stmt.close();
         } catch (SQLException throwables) {
-            LOG.error(throwables);
+            log.error(throwables);
         }
 
         mapTables();
@@ -61,14 +59,14 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
         String[] sinkTables = options.getSinkTable().split(",");
         for (int i = 0; i < sourceTables.length; i++) {
             mappingSourceSinkTables.put(sourceTables[i].trim().toLowerCase(), sinkTables[i].trim().toLowerCase());
-            LOG.debug("Source Table -> Sink Table: {} -> {}", sourceTables[i].trim(), sinkTables[i].trim());
+            log.debug("Source Table -> Sink Table: {} -> {}", sourceTables[i].trim(), sinkTables[i].trim());
         }
     }
 
 
     @Override
     public void handleBatch(List<RecordChangeEvent<SourceRecord>> records, DebeziumEngine.RecordCommitter<RecordChangeEvent<SourceRecord>> committer) throws InterruptedException {
-        LOG.info("New records received: {}", records.size());
+        log.info("New records received: {}", records.size());
 
         // batch operations
         Envelope.Operation oldOperation = null;
@@ -77,16 +75,16 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
         for (RecordChangeEvent<SourceRecord> r : records) {
             SourceRecord record = r.record();
             if (record.value() != null) {
-                LOG.debug(record);
+                log.debug(record);
                 Envelope.Operation operation = Envelope.operationFor(record);
 
                 if (operation != null) {
                     try {
                         // if the operation OR de sink table changes execute bath operations
                         if (batchPS != null) {
-                            LOG.trace("batchPS es nulo");
-                            LOG.trace("oldOperation: {}, newOperation: {}", oldOperation, operation);
-                            LOG.trace("oldSinkTableName: {}, newSinkTableName: {}", oldSinkTableName, getSourceTableName(record));
+                            log.trace("batchPS es nulo");
+                            log.trace("oldOperation: {}, newOperation: {}", oldOperation, operation);
+                            log.trace("oldSinkTableName: {}, newSinkTableName: {}", oldSinkTableName, getSourceTableName(record));
                             if (
                                     (oldOperation != null && !oldOperation.equals(operation))
                                             ||
@@ -96,12 +94,12 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
                                 try {
                                     int[] rows = batchPS.executeBatch();
                                     this.getConnection().commit();
-                                    LOG.info("Commited batch records. Rows affected: {}", rows.length);
+                                    log.info("Commited batch records. Rows affected: {}", rows.length);
                                     batchPS.close();
                                     batchPS = null;
                                 } catch (Exception e) {
-                                    LOG.error("Error ejecutando el batchPS.executeBatch: {}", e.getMessage());
-                                    LOG.error(e);
+                                    log.error("Error ejecutando el batchPS.executeBatch: {}", e.getMessage());
+                                    log.error(e);
                                     // TODO Si hay un error en un batchPS se hace rollback en todo el batch y perdemos datos.
                                     // hay que ver como gestionar este error
 
@@ -111,27 +109,27 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
 
                         switch (operation) {
                             case READ:
-                                LOG.trace("Read event. Snapshoting - Merge");
+                                log.trace("Read event. Snapshoting - Merge");
                                 doMerge(record);
                                 break;
                             case CREATE:
-                                LOG.trace("Create event. Insert");
+                                log.trace("Create event. Insert");
                                 doInsert(record);
                                 break;
                             case DELETE:
-                                LOG.trace("Delete event. Delete");
+                                log.trace("Delete event. Delete");
                                 doDelete(record);
                                 break;
                             case UPDATE:
-                                LOG.trace("Update event. Update");
+                                log.trace("Update event. Update");
                                 doUpdate(record);
                                 break;
                             default:
                                 break;
                         }
                     } catch (Exception throwables) {
-                        LOG.error("Error preparando la operacion: {}", throwables.getMessage());
-                        LOG.error(throwables);
+                        log.error("Error preparando la operacion: {}", throwables.getMessage());
+                        log.error(throwables);
                     }
                     oldOperation = operation;
                     oldSinkTableName = getSourceTableName(record);
@@ -146,21 +144,21 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
             if (batchPS != null) {
                 int[] rows = batchPS.executeBatch();
                 this.getConnection().commit();
-                LOG.info("Commited all records. Rows affected: {}", rows.length);
+                log.info("Commited all records. Rows affected: {}", rows.length);
             }
         } catch (SQLException throwables) {
-            LOG.error("Un SQLException");
-            LOG.error(throwables);
+            log.error("Un SQLException");
+            log.error(throwables);
         } catch (Exception e) {
-            LOG.error("Salgo por aqui");
-            LOG.error("Error no controlado: {}", e.getMessage());
-            LOG.error(e);
+            log.error("Salgo por aqui");
+            log.error("Error no controlado: {}", e.getMessage());
+            log.error(e);
         } finally {
             try {
                 if (batchPS != null)
                     batchPS.close();
             } catch (SQLException throwables) {
-                LOG.error(throwables);
+                log.error(throwables);
             }
             batchPS = null;
         }
@@ -188,7 +186,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
                 sqlCmd.append(pks[i].toLowerCase()).append("=?");
             }
 
-            LOG.info("Updating record with " + sqlCmd);
+            log.info("Updating record with " + sqlCmd);
             batchPS = this.getConnection().prepareStatement(String.valueOf(sqlCmd));
         }
 
@@ -226,7 +224,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
                 sqlCmd.append(pks[i].toLowerCase()).append("=?");
             }
 
-            LOG.info("Deleting record with " + sqlCmd);
+            log.info("Deleting record with " + sqlCmd);
             batchPS = this.getConnection().prepareStatement(String.valueOf(sqlCmd));
         }
 
@@ -263,7 +261,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
             }
             sqlCmd.append(" )");
 
-            LOG.info("Inserting data with " + sqlCmd);
+            log.info("Inserting data with " + sqlCmd);
 
             batchPS = this.getConnection().prepareStatement(String.valueOf(sqlCmd));
         }
@@ -317,7 +315,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
             }
             sqlCmd.append(" ) ");
 
-            LOG.info("Merging record with " + sqlCmd);
+            log.info("Merging record with " + sqlCmd);
             batchPS = this.getConnection().prepareStatement(String.valueOf(sqlCmd));
         }
 
@@ -337,7 +335,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
             fieldName = field.name();
             fieldSchemaName = field.schema().name();
 
-            //LOG.debug("Field name: {}, Schema type:{}, Schema Name:{}", fieldName, field.schema().type(), field.schema().name());
+            //log.debug("Field name: {}, Schema type:{}, Schema Name:{}", fieldName, field.schema().type(), field.schema().name());
 
             switch (field.schema().type()) {
                 case STRING:

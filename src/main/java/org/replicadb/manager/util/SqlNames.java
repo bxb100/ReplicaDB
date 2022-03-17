@@ -3,13 +3,13 @@ package org.replicadb.manager.util;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 
-
+@Log4j2
 public class SqlNames {
-    private static final Logger LOG = LogManager.getLogger(SqlNames.class);
 
     /**
      * @param options
@@ -25,7 +25,7 @@ public class SqlNames {
             return options.getSourceColumns();
         } else {
             options.setSinkColumns(getColumnsFromResultSetMetaData(options, rsmd));
-            LOG.warn("Options source-columns and sink-columns are null, getting from Source ResultSetMetaData: " + options.getSinkColumns());
+            log.warn("Options source-columns and sink-columns are null, getting from Source ResultSetMetaData: " + options.getSinkColumns());
             return options.getSinkColumns();
         }
     }

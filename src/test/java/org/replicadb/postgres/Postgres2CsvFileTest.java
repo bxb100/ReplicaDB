@@ -1,20 +1,5 @@
 package org.replicadb.postgres;
 
-import org.apache.avro.Schema;
-import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.ClassRule;
-import org.junit.jupiter.api.*;
-import org.replicadb.ReplicaDB;
-import org.replicadb.cli.ReplicationMode;
-import org.replicadb.cli.ToolOptions;
-import org.replicadb.manager.file.FileFormats;
-import org.replicadb.manager.file.FileManager;
-import org.replicadb.utils.ScriptRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -23,15 +8,36 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
-import java.util.Properties;
 
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.ClassRule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.replicadb.ReplicaDB;
+import org.replicadb.cli.ReplicationMode;
+import org.replicadb.cli.ToolOptions;
+import org.replicadb.manager.file.FileFormats;
+import org.replicadb.manager.file.FileManager;
+import org.replicadb.utils.ScriptRunner;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Log4j2
 @Testcontainers
 class Postgres2CsvFileTest {
-    private static final Logger LOG = LogManager.getLogger(Postgres2CsvFileTest.class);
     private static final String RESOURECE_DIR = Paths.get("src", "test", "resources").toFile().getAbsolutePath();
     private static final String REPLICADB_CONF_FILE = "/replicadb.conf";
     private static final String POSTGRES_SOURCE_FILE = "/postgres/pg-source.sql";
@@ -40,14 +46,12 @@ class Postgres2CsvFileTest {
 
     private static final String SINK_FILE_PATH = "file:///tmp/fileSink.csv";
     private static final String SINK_FILE_URI_PATH = "file:///tmp/fileSink.csv";
-
-    private Connection postgresConn;
-
     @ClassRule
     public static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:9.6")
             .withDatabaseName(USER_PASSWD_DB)
             .withUsername(USER_PASSWD_DB)
             .withPassword(USER_PASSWD_DB);
+    private Connection postgresConn;
 
     @BeforeAll
     static void setUp() throws SQLException, IOException {
@@ -70,7 +74,7 @@ class Postgres2CsvFileTest {
     @AfterEach
     void tearDown() throws SQLException {
         File sinkFile = new File(URI.create(SINK_FILE_URI_PATH));
-        LOG.info("Deleted file: {}",sinkFile.delete());
+        log.info("Deleted file: {}", sinkFile.delete());
         this.postgresConn.close();
 
         // Clean the static temFiles HasMap.
@@ -81,7 +85,7 @@ class Postgres2CsvFileTest {
     public int countSinkRows() throws IOException {
         Path path = Paths.get(URI.create(SINK_FILE_URI_PATH));
         int count = (int) Files.lines(path).count();
-        LOG.info("File total Rows:{}", count);
+        log.info("File total Rows:{}", count);
         return count;
     }
 

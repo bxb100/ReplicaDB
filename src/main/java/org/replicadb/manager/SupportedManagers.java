@@ -1,9 +1,9 @@
 package org.replicadb.manager;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 import org.replicadb.cli.ToolOptions;
 
+@Log4j2
 public enum SupportedManagers {
     MYSQL(JdbcDrivers.MYSQL.getSchemePrefix()), MARIADB(JdbcDrivers.MARIADB.getSchemePrefix()), POSTGRES(JdbcDrivers.POSTGRES.getSchemePrefix()),
     HSQLDB(JdbcDrivers.HSQLDB.getSchemePrefix()), ORACLE(JdbcDrivers.ORACLE.getSchemePrefix()),
@@ -14,7 +14,6 @@ public enum SupportedManagers {
     S3(JdbcDrivers.S3.getSchemePrefix()), FILE(JdbcDrivers.FILE.getSchemePrefix());
 
     //private final boolean hasDirectConnector;
-    private static final Logger LOG = LogManager.getLogger(SupportedManagers.class.getName());
     private final String schemePrefix;
 
     SupportedManagers(String schemePrefix) {
@@ -30,7 +29,7 @@ public enum SupportedManagers {
         } else if (dsType == DataSourceType.SINK) {
             connectStr = options.getSinkConnect();
         } else {
-            LOG.error("DataSourceType must be Source or Sink");
+            log.error("DataSourceType must be Source or Sink");
         }
 
         // java.net.URL follows RFC-2396 literally, which does not allow a ':'
@@ -49,7 +48,7 @@ public enum SupportedManagers {
                 // Warn that this is nonstandard. But we should be as permissive
                 // as possible here and let the ConnectionManagers themselves throw
                 // out the connect string if it doesn't make sense to them.
-                LOG.warn("Could not determine scheme component of connect string");
+                log.warn("Could not determine scheme component of connect string");
 
                 // Use the whole string.
                 schemeStopIdx = connectStr.length();

@@ -6,17 +6,13 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Set;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public class OptionsFile {
 
-    private static final Logger LOG = LogManager.getLogger(OptionsFile.class.getName());
     private static final String SOURCE_CONNECTION_PREFIX = "source.connect.parameter.";
     private static final String SINK_CONNECTION_PREFIX = "sink.connect.parameter.";
-
-
-    private final EnvironmentVariableEvaluator envEvaluator = new EnvironmentVariableEvaluator();
 
     private final Properties properties;
 
@@ -38,7 +34,7 @@ public class OptionsFile {
             resolvePropertiesEnvVar();
         } catch (IOException e) {
             // handle the exception
-            LOG.error(e);
+            log.error(e);
             throw e;
         }
     }
@@ -90,18 +86,8 @@ public class OptionsFile {
             String value = this.properties.getProperty(name);
 
             if (value != null && !value.isEmpty())
-                this.properties.setProperty(name, envEvaluator.resolveEnvVars(value));
+                this.properties.setProperty(name, EnvironmentVariableEvaluator.resolveEnvVars(value));
 
-        }
-    }
-
-
-    public void printProperties() {
-        // print out what you just read
-        Enumeration<?> propertyNames = properties.propertyNames();
-        while (propertyNames.hasMoreElements()) {
-            String name = propertyNames.nextElement().toString();
-            System.out.println(name + "=" + properties.getProperty(name));
         }
     }
 }

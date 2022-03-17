@@ -1,11 +1,10 @@
-package org.replicadb.config;
+package org.replicadb.monitor;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 import org.replicadb.cli.ToolOptions;
 
+@Log4j2
 public class Sentry {
-    private static final Logger LOG = LogManager.getLogger(Sentry.class);
 
     /**
      * Init the Sentry service for error tracking and performance monitoring.
@@ -24,7 +23,7 @@ public class Sentry {
             sentryOptions.setDsn(sentryDsn);
         });
 
-        if (io.sentry.Sentry.isEnabled()) LOG.info("Sentry enabled");
+        if (io.sentry.Sentry.isEnabled()) log.info("Sentry enabled");
 
         // Sentry Context
         io.sentry.Sentry.configureScope(scope -> {

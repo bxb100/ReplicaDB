@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ReplicationMode;
@@ -21,9 +22,8 @@ import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.file.FileManager;
 import org.replicadb.manager.file.FileManagerFactory;
 
+@Log4j2
 public class LocalFileManager extends SqlManager {
-
-    private static final Logger LOG = LogManager.getLogger(LocalFileManager.class.getName());
 
     private final FileManager fileManager;
 
@@ -100,7 +100,7 @@ public class LocalFileManager extends SqlManager {
 
         // Temporal file name
         String randomFileUrl = options.getSinkConnect() + ".repdb." + (new Random().nextInt(9000) + 1000);
-        LOG.info("Temporal file path: {}", randomFileUrl);
+        log.info("Temporal file path: {}", randomFileUrl);
 
         // Save the path of temp file
         FileManager.setTempFilePath(taskId, randomFileUrl);
