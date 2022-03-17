@@ -1,12 +1,12 @@
 package org.replicadb.manager;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.replicadb.cli.ToolOptions;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.replicadb.cli.ToolOptions;
 
 public class DenodoManager extends SqlManager {
 

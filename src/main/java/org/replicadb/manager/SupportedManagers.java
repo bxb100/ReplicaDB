@@ -13,33 +13,13 @@ public enum SupportedManagers {
     /*CSV(JdbcDrivers.CSV.getSchemePrefix()),*/ KAFKA(JdbcDrivers.KAFKA.getSchemePrefix()),
     S3(JdbcDrivers.S3.getSchemePrefix()), FILE(JdbcDrivers.FILE.getSchemePrefix());
 
-    private final String schemePrefix;
-
     //private final boolean hasDirectConnector;
     private static final Logger LOG = LogManager.getLogger(SupportedManagers.class.getName());
+    private final String schemePrefix;
 
     SupportedManagers(String schemePrefix) {
         this.schemePrefix = schemePrefix;
     }
-
-    public String getSchemePrefix() {
-        return schemePrefix;
-    }
-
-
-    public boolean isTheManagerTypeOf(ToolOptions options, DataSourceType dsType) {
-        return (extractScheme(options, dsType)).startsWith(getSchemePrefix());
-    }
-
-//    public static SupportedManagers createFrom(ToolOptions options) {
-//        String scheme = extractScheme(options);
-//        for (SupportedManagers m : values()) {
-//            if (scheme.startsWith(m.getSchemePrefix())) {
-//                return m;
-//            }
-//        }
-//        return null;
-//    }
 
     static String extractScheme(ToolOptions options, DataSourceType dsType) {
 
@@ -76,6 +56,24 @@ public enum SupportedManagers {
             }
         }
         return connectStr.substring(0, schemeStopIdx);
+    }
+
+    public String getSchemePrefix() {
+        return schemePrefix;
+    }
+
+//    public static SupportedManagers createFrom(ToolOptions options) {
+//        String scheme = extractScheme(options);
+//        for (SupportedManagers m : values()) {
+//            if (scheme.startsWith(m.getSchemePrefix())) {
+//                return m;
+//            }
+//        }
+//        return null;
+//    }
+
+    public boolean isTheManagerTypeOf(ToolOptions options, DataSourceType dsType) {
+        return (extractScheme(options, dsType)).startsWith(getSchemePrefix());
     }
 
 }

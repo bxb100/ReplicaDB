@@ -1,5 +1,9 @@
 package org.replicadb.manager.cdc;
 
+import java.net.URI;
+import java.util.List;
+import java.util.Properties;
+
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.RecordChangeEvent;
 import org.apache.kafka.connect.source.SourceRecord;
@@ -8,10 +12,6 @@ import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.SQLServerManager;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Properties;
 
 public class SQLServerManagerCDC extends SQLServerManager implements DebeziumEngine.ChangeConsumer<RecordChangeEvent<SourceRecord>> {
 
@@ -44,12 +44,12 @@ public class SQLServerManagerCDC extends SQLServerManager implements DebeziumEng
         props.setProperty("query.fetch.size", String.valueOf(this.options.getFetchSize()));
         props.setProperty("snapshot.fetch.size", "2000");
         //props.setProperty("snapshot.isolation.mode", "read_committed");
-        props.setProperty("snapshot.mode","schema_only");
+        props.setProperty("snapshot.mode", "schema_only");
         //props.setProperty("provide.transaction.metadata", "true");
         props.setProperty("tombstones.on.delete", "false"); // only a delete event is sent.
         props.setProperty("converter.schemas.enable", "false"); // don't include schema in message
 
-        props.setProperty("event.processing.failure.handling.mode","fail");
+        props.setProperty("event.processing.failure.handling.mode", "fail");
 
         /* connector properties */
         props.setProperty("connector.class", DEBEZIUM_CONNECTOR_CLASS);

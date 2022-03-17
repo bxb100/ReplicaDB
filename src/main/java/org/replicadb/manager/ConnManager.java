@@ -1,14 +1,18 @@
 package org.replicadb.manager;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.replicadb.cli.ToolOptions;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.replicadb.cli.ToolOptions;
 
 /**
  * Abstract interface that manages connections to a database.
@@ -17,18 +21,15 @@ import java.util.concurrent.Future;
  */
 public abstract class ConnManager {
 
-    private static final Logger LOG = LogManager.getLogger(ConnManager.class.getName());
-
     /**
      * If users are providing their own query, the following string is expected
      * to appear in the WHERE clause, which will be substituted with a pair of
      * conditions on the input to allow input splits to parallelise the import.
      */
     public static final String SUBSTITUTE_TOKEN = "$CONDITIONS";
-
-    protected ToolOptions options;
-
+    private static final Logger LOG = LogManager.getLogger(ConnManager.class.getName());
     private static String randomSinkStagingTableName;
+    protected ToolOptions options;
 
     /**
      * Execute a SQL statement to read the named set of columns from a table.
@@ -271,9 +272,10 @@ public abstract class ConnManager {
     /**
      * @return the debezium connector properties
      */
-    public Properties getDebeziumProps(){
+    public Properties getDebeziumProps() {
         return null;
-    };
+    }
+
 }
 
 

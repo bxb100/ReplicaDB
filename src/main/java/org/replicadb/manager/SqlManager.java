@@ -1,19 +1,29 @@
 package org.replicadb.manager;
 
+import java.io.IOException;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.concurrent.TimedSemaphore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
-
-import java.io.IOException;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -111,8 +121,6 @@ public abstract class SqlManager extends ConnManager {
         return this.connection;
     }
 
-    ;
-
     /**
      * Executes an arbitrary SQL statement.
      *
@@ -145,7 +153,7 @@ public abstract class SqlManager extends ConnManager {
             sb.append(o.toString())
                     .append(", ");
         }
-        LOG.info(Thread.currentThread().getName() + ": With args: " + sb.toString());
+        LOG.info(Thread.currentThread().getName() + ": With args: " + sb);
 
         return statement.executeQuery();
     }
@@ -363,7 +371,7 @@ public abstract class SqlManager extends ConnManager {
                 getConnection().commit();
             }
         } catch (SQLException sqlException) {
-            LOG.error("Error reading primary key metadata: " + sqlException.toString(), sqlException);
+            LOG.error("Error reading primary key metadata: " + sqlException, sqlException);
             return null;
         }
     }

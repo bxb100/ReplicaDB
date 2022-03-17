@@ -1,21 +1,5 @@
 package org.replicadb.manager.file;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.common.type.HiveDecimal;
-import org.apache.hadoop.hive.ql.exec.vector.*;
-import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.orc.*;
-import org.replicadb.cli.ReplicationMode;
-import org.replicadb.cli.ToolOptions;
-import org.replicadb.manager.DataSourceType;
-import org.replicadb.manager.util.BandwidthThrottling;
-import org.replicadb.rowset.OrcCachedRowSetImpl;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,10 +8,48 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
-import java.sql.*;
-import java.util.*;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.common.type.HiveDecimal;
+import org.apache.hadoop.hive.ql.exec.vector.BytesColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.ColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.DateColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.DecimalColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.DoubleColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.ListColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
+import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
+import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.orc.CompressionKind;
+import org.apache.orc.OrcConf;
+import org.apache.orc.OrcFile;
+import org.apache.orc.TypeDescription;
+import org.apache.orc.Writer;
+import org.replicadb.cli.ReplicationMode;
+import org.replicadb.cli.ToolOptions;
+import org.replicadb.manager.DataSourceType;
+import org.replicadb.manager.util.BandwidthThrottling;
+import org.replicadb.rowset.OrcCachedRowSetImpl;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.replicadb.manager.LocalFileManager.getFileFromPathString;
 
@@ -41,158 +63,6 @@ public class OrcFileManager extends FileManager {
 
     public OrcFileManager(ToolOptions opts, DataSourceType dsType) {
         super(opts, dsType);
-    }
-
-    @Override
-    public void init() throws SQLException {}
-
-    @Override
-    public ResultSet readData() {
-        return this.orcResultset;
-    }
-
-    @Override
-    public int writeData(OutputStream out, ResultSet resultSet, int taskId, File tempFile) throws IOException, SQLException {
-
-        // because we'll create a new file and a new output stream
-        //out.close();
-
-        // Create configuration and overwrite existing temporal file
-        Configuration conf = new Configuration();
-        conf.set(OrcConf.OVERWRITE_OUTPUT_FILE.getAttribute(), "true");
-
-        if (tempFile == null) tempFile = createTemporalFile(taskId);
-        Path path = new Path(tempFile.getPath());
-
-        // Create the schemas and extract metadata from the schema
-        TypeDescription schema = typeDescriptionFromResultSet(resultSet);
-        LOG.info("Sink ORC type description: {} ", schema.toString());
-
-        // Create a row batch
-        VectorizedRowBatch batch = schema.createRowBatch();
-
-        // Determine compression codec
-        Properties orcFileProperties;
-        //TODO
-        if (dsType == DataSourceType.SOURCE)
-            orcFileProperties = options.getSourceConnectionParams();
-        else
-            orcFileProperties = options.getSinkConnectionParams();
-
-        CompressionKind codec = resolveCompression(orcFileProperties.getProperty("orc.compression"));
-
-        // Open a writer to write the data to an ORC fle
-        Writer writer = OrcFile.createWriter(path,
-                OrcFile.writerOptions(conf)
-                        .compress(codec)
-                        .setSchema(schema));
-
-        final int BATCH_SIZE = batch.getMaxSize();
-
-        int processedRows = 0;
-        // lines
-        if (resultSet.next()) {
-            // Create Bandwidth Throttling
-            BandwidthThrottling bt = new BandwidthThrottling(options.getBandwidthThrottling(), options.getFetchSize(), resultSet);
-            do {
-                bt.acquiere();
-                processedRows++;
-                int row = batch.size++;
-
-                // Bind resultSet values to VectorizedRowBatch
-                toOrcVectorized(batch, row, resultSet);
-
-                if (row == BATCH_SIZE - 1) {
-                    writer.addRowBatch(batch);
-                    batch.reset();
-                }
-
-            } while (resultSet.next());
-        }
-
-        // insert remaining records
-        if (batch.size != 0) {
-            writer.addRowBatch(batch);
-            batch.reset();
-        }
-
-        writer.close();
-
-        // finally return the ORC file inside OutputStream
-        LOG.debug("ORC file generated into {}" , tempFile.getPath());
-        IOUtils.copy(FileUtils.openInputStream(tempFile), out);
-        return processedRows;
-    }
-
-    private File createTemporalFile(int taskId) {
-        try {
-            java.nio.file.Path temp = Files.createTempFile("repdb", ".orc");
-            LOG.info("Temporal file path: " + temp.toAbsolutePath());
-            // Save the path of temp file
-            setTempFilePath(taskId, temp.toAbsolutePath().toString());
-            return temp.toFile();
-        } catch (IOException e) {
-            LOG.error(e);
-        }
-        return null;
-    }
-
-    @Override
-    public void mergeFiles() throws IOException, URISyntaxException {
-        File finalFile = getFileFromPathString(options.getSinkConnect());
-        Path finalFilePath = new Path(finalFile.toPath().toUri());
-
-        int tempFilesIdx = 0;
-        if (options.getMode().equals(ReplicationMode.COMPLETE.getModeText())) {
-            // Rename first temporal file to the final file
-            File firstTemporalFile = getFileFromPathString(getTempFilePath(0));
-            String crcFile = "file://" + firstTemporalFile.getParent() + "/." + firstTemporalFile.getName() + ".crc";
-            LOG.debug("The crc file: {}", crcFile);
-            getFileFromPathString(crcFile).delete();
-
-            Files.move(firstTemporalFile.toPath(), firstTemporalFile.toPath().resolveSibling(finalFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
-            tempFilesIdx = 1;
-            LOG.info("Complete mode: creating and merging all temp files into: " + finalFile.getPath());
-        } else {
-            LOG.info("Incremental mode: appending and merging all temp files into: " + finalFile.getPath());
-            // The final file must exist
-            if (!finalFile.exists()) finalFile.createNewFile();
-        }
-
-        Configuration conf = new Configuration();
-        conf.set(OrcConf.OVERWRITE_OUTPUT_FILE.getAttribute(), "true");
-
-        for (int i = tempFilesIdx; i <= getTempFilePathSize() - 1; i++) {
-            LOG.debug("tempFilesPath.get({}): {}", i, getTempFilePath(i) );
-            File tempFile = getFileFromPathString( getTempFilePath(i) );
-            Path tempFilePath = new Path(tempFile.toPath().toUri());
-            List<Path> filesToMerge = new ArrayList<>();
-            filesToMerge.add(tempFilePath);
-            filesToMerge.add(finalFilePath);
-
-            String mergeFilePathString = finalFile.toPath().toUri() + ".merged";
-            Path mergedFilePath = new Path(mergeFilePathString);
-            File mergeFile = getFileFromPathString(mergeFilePathString);
-            if (!mergeFile.exists()) mergeFile.createNewFile();
-
-            LOG.debug("Merge temp file : {} into : {}", tempFilePath.toUri(), finalFile.toPath().toUri());
-            // Merge files
-            OrcFile.mergeFiles(mergedFilePath, OrcFile.writerOptions(conf), filesToMerge);
-
-            // Delete temp file
-            tempFile.delete();
-            // Delete crc file, hadoop bug https://issues.apache.org/jira/browse/HADOOP-7199
-            String crcFile = "file://" + tempFile.getParent() + "/." + tempFile.getName() + ".crc";
-            getFileFromPathString(crcFile).delete();
-
-            // Rename Merged file to the final file
-            Files.move(mergeFile.toPath(), finalFile.toPath().resolveSibling(finalFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
-
-        }
-
-        // remove Merged file crc
-        String crcFile = "file://" + finalFile.getParent() + "/." + finalFile.getName() + ".merged.crc";
-        getFileFromPathString(crcFile).delete();
     }
 
     /**
@@ -304,7 +174,7 @@ public class OrcFileManager extends FileManager {
                         Object[] values = (Object[]) arrayData.getArray();
                         lcv.lengths[rowInBatch] = values.length;
                         lcv.offsets[rowInBatch] = lcv.childCount;
-                        lcv.childCount = Math.toIntExact(lcv.lengths[rowInBatch]) ;
+                        lcv.childCount = Math.toIntExact(lcv.lengths[rowInBatch]);
                         lcv.child.ensureSize(lcv.childCount, true);
                         for (int j = 0; j < values.length; j++) {
                             setValueToBytesColumnVector(lcv.child, (int) lcv.offsets[rowInBatch] + j, values[j]);
@@ -333,9 +203,11 @@ public class OrcFileManager extends FileManager {
     private static void setValueToBytesColumnVector(ColumnVector col, int rowInBatch, Object value) {
         byte[] finalValueToSet = new byte[0];
         if (value != null) {
-            if (value instanceof String) finalValueToSet = ((String) value).getBytes(UTF_8);
+            if (value instanceof String)
+                finalValueToSet = ((String) value).getBytes(UTF_8);
             if (value instanceof byte[]) finalValueToSet = (byte[]) value;
-            if (value instanceof Object[]) finalValueToSet = Arrays.deepToString((Object[]) value).getBytes(UTF_8);
+            if (value instanceof Object[])
+                finalValueToSet = Arrays.deepToString((Object[]) value).getBytes(UTF_8);
         }
         ((BytesColumnVector) col).setVal(rowInBatch, finalValueToSet);
     }
@@ -412,6 +284,158 @@ public class OrcFileManager extends FileManager {
         return schema;
     }
 
+    @Override
+    public void init() throws SQLException {
+    }
+
+    @Override
+    public ResultSet readData() {
+        return this.orcResultset;
+    }
+
+    @Override
+    public int writeData(OutputStream out, ResultSet resultSet, int taskId, File tempFile) throws IOException, SQLException {
+
+        // because we'll create a new file and a new output stream
+        //out.close();
+
+        // Create configuration and overwrite existing temporal file
+        Configuration conf = new Configuration();
+        conf.set(OrcConf.OVERWRITE_OUTPUT_FILE.getAttribute(), "true");
+
+        if (tempFile == null) tempFile = createTemporalFile(taskId);
+        Path path = new Path(tempFile.getPath());
+
+        // Create the schemas and extract metadata from the schema
+        TypeDescription schema = typeDescriptionFromResultSet(resultSet);
+        LOG.info("Sink ORC type description: {} ", schema.toString());
+
+        // Create a row batch
+        VectorizedRowBatch batch = schema.createRowBatch();
+
+        // Determine compression codec
+        Properties orcFileProperties;
+        //TODO
+        if (dsType == DataSourceType.SOURCE)
+            orcFileProperties = options.getSourceConnectionParams();
+        else
+            orcFileProperties = options.getSinkConnectionParams();
+
+        CompressionKind codec = resolveCompression(orcFileProperties.getProperty("orc.compression"));
+
+        // Open a writer to write the data to an ORC fle
+        Writer writer = OrcFile.createWriter(path,
+                OrcFile.writerOptions(conf)
+                        .compress(codec)
+                        .setSchema(schema));
+
+        final int BATCH_SIZE = batch.getMaxSize();
+
+        int processedRows = 0;
+        // lines
+        if (resultSet.next()) {
+            // Create Bandwidth Throttling
+            BandwidthThrottling bt = new BandwidthThrottling(options.getBandwidthThrottling(), options.getFetchSize(), resultSet);
+            do {
+                bt.acquiere();
+                processedRows++;
+                int row = batch.size++;
+
+                // Bind resultSet values to VectorizedRowBatch
+                toOrcVectorized(batch, row, resultSet);
+
+                if (row == BATCH_SIZE - 1) {
+                    writer.addRowBatch(batch);
+                    batch.reset();
+                }
+
+            } while (resultSet.next());
+        }
+
+        // insert remaining records
+        if (batch.size != 0) {
+            writer.addRowBatch(batch);
+            batch.reset();
+        }
+
+        writer.close();
+
+        // finally return the ORC file inside OutputStream
+        LOG.debug("ORC file generated into {}", tempFile.getPath());
+        IOUtils.copy(FileUtils.openInputStream(tempFile), out);
+        return processedRows;
+    }
+
+    private File createTemporalFile(int taskId) {
+        try {
+            java.nio.file.Path temp = Files.createTempFile("repdb", ".orc");
+            LOG.info("Temporal file path: " + temp.toAbsolutePath());
+            // Save the path of temp file
+            setTempFilePath(taskId, temp.toAbsolutePath().toString());
+            return temp.toFile();
+        } catch (IOException e) {
+            LOG.error(e);
+        }
+        return null;
+    }
+
+    @Override
+    public void mergeFiles() throws IOException, URISyntaxException {
+        File finalFile = getFileFromPathString(options.getSinkConnect());
+        Path finalFilePath = new Path(finalFile.toPath().toUri());
+
+        int tempFilesIdx = 0;
+        if (options.getMode().equals(ReplicationMode.COMPLETE.getModeText())) {
+            // Rename first temporal file to the final file
+            File firstTemporalFile = getFileFromPathString(getTempFilePath(0));
+            String crcFile = "file://" + firstTemporalFile.getParent() + "/." + firstTemporalFile.getName() + ".crc";
+            LOG.debug("The crc file: {}", crcFile);
+            getFileFromPathString(crcFile).delete();
+
+            Files.move(firstTemporalFile.toPath(), firstTemporalFile.toPath().resolveSibling(finalFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
+            tempFilesIdx = 1;
+            LOG.info("Complete mode: creating and merging all temp files into: " + finalFile.getPath());
+        } else {
+            LOG.info("Incremental mode: appending and merging all temp files into: " + finalFile.getPath());
+            // The final file must exist
+            if (!finalFile.exists()) finalFile.createNewFile();
+        }
+
+        Configuration conf = new Configuration();
+        conf.set(OrcConf.OVERWRITE_OUTPUT_FILE.getAttribute(), "true");
+
+        for (int i = tempFilesIdx; i <= getTempFilePathSize() - 1; i++) {
+            LOG.debug("tempFilesPath.get({}): {}", i, getTempFilePath(i));
+            File tempFile = getFileFromPathString(getTempFilePath(i));
+            Path tempFilePath = new Path(tempFile.toPath().toUri());
+            List<Path> filesToMerge = new ArrayList<>();
+            filesToMerge.add(tempFilePath);
+            filesToMerge.add(finalFilePath);
+
+            String mergeFilePathString = finalFile.toPath().toUri() + ".merged";
+            Path mergedFilePath = new Path(mergeFilePathString);
+            File mergeFile = getFileFromPathString(mergeFilePathString);
+            if (!mergeFile.exists()) mergeFile.createNewFile();
+
+            LOG.debug("Merge temp file : {} into : {}", tempFilePath.toUri(), finalFile.toPath().toUri());
+            // Merge files
+            OrcFile.mergeFiles(mergedFilePath, OrcFile.writerOptions(conf), filesToMerge);
+
+            // Delete temp file
+            tempFile.delete();
+            // Delete crc file, hadoop bug https://issues.apache.org/jira/browse/HADOOP-7199
+            String crcFile = "file://" + tempFile.getParent() + "/." + tempFile.getName() + ".crc";
+            getFileFromPathString(crcFile).delete();
+
+            // Rename Merged file to the final file
+            Files.move(mergeFile.toPath(), finalFile.toPath().resolveSibling(finalFile.getPath()), StandardCopyOption.REPLACE_EXISTING);
+
+        }
+
+        // remove Merged file crc
+        String crcFile = "file://" + finalFile.getParent() + "/." + finalFile.getName() + ".merged.crc";
+        getFileFromPathString(crcFile).delete();
+    }
 
     @Override
     public void cleanUp() {

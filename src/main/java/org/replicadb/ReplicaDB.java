@@ -1,5 +1,17 @@
 package org.replicadb;
 
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import io.sentry.ITransaction;
 import io.sentry.Sentry;
 import io.sentry.SpanStatus;
@@ -15,15 +27,6 @@ import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.ConnManager;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.ManagerFactory;
-
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
-
 import static org.replicadb.config.Sentry.SentryInit;
 
 /**
@@ -151,8 +154,10 @@ public class ReplicaDB {
                         sourceDs.close();
                     }
 
-                    if (preSinkTasksExecutor != null) preSinkTasksExecutor.shutdownNow();
-                    if (replicaTasksService != null) replicaTasksService.shutdownNow();
+                    if (preSinkTasksExecutor != null)
+                        preSinkTasksExecutor.shutdownNow();
+                    if (replicaTasksService != null)
+                        replicaTasksService.shutdownNow();
 
                 } catch (Exception e) {
                     LOG.error(e);
@@ -183,14 +188,14 @@ public class ReplicaDB {
             if (i > 1) System.out.print("\t");
             System.out.print(rsmd.getColumnName(i));
         }
-        System.out.println("");
+        System.out.println();
 
         while (rs.next()) {
             for (int i = 1; i <= columnsNumber; i++) {
                 if (i > 1) System.out.print("\t");
                 System.out.print(rs.getString(i));
             }
-            System.out.println("");
+            System.out.println();
         }
     }
 

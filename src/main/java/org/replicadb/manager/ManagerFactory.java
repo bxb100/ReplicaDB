@@ -6,15 +6,22 @@ import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.cdc.OracleManagerCDC;
 import org.replicadb.manager.cdc.SQLServerManagerCDC;
-
-import static org.replicadb.manager.SupportedManagers.*;
+import static org.replicadb.manager.SupportedManagers.DENODO;
+import static org.replicadb.manager.SupportedManagers.FILE;
+import static org.replicadb.manager.SupportedManagers.KAFKA;
+import static org.replicadb.manager.SupportedManagers.MARIADB;
+import static org.replicadb.manager.SupportedManagers.MYSQL;
+import static org.replicadb.manager.SupportedManagers.ORACLE;
+import static org.replicadb.manager.SupportedManagers.POSTGRES;
+import static org.replicadb.manager.SupportedManagers.S3;
+import static org.replicadb.manager.SupportedManagers.SQLSERVER;
 
 /**
  * Contains instantiation code for all ConnManager implementations
- *  ManagerFactories are instantiated by o.a.h.s.ConnFactory and
- *  stored in an ordered list. The ConnFactory.getManager() implementation
- *  calls the accept() method of each ManagerFactory, in order until
- *  one such call returns a non-null ConnManager instance.
+ * ManagerFactories are instantiated by o.a.h.s.ConnFactory and
+ * stored in an ordered list. The ConnFactory.getManager() implementation
+ * calls the accept() method of each ManagerFactory, in order until
+ * one such call returns a non-null ConnManager instance.
  */
 public class ManagerFactory {
 
@@ -50,8 +57,8 @@ public class ManagerFactory {
                 return new SQLServerManagerCDC(options, dsType);
             } else if (ORACLE.isTheManagerTypeOf(options, dsType)) {
                 return new OracleManagerCDC(options, dsType);
-            }else {
-                throw new IllegalArgumentException("The database with scheme "+scheme+" is not supported in CDC mode");
+            } else {
+                throw new IllegalArgumentException("The database with scheme " + scheme + " is not supported in CDC mode");
             }
 
         } else {
@@ -74,7 +81,7 @@ public class ManagerFactory {
             } else if (FILE.isTheManagerTypeOf(options, dsType)) {
                 return new LocalFileManager(options, dsType);
             } else {
-                throw new IllegalArgumentException("The database with scheme "+scheme+" is not supported by ReplicaDB");
+                throw new IllegalArgumentException("The database with scheme " + scheme + " is not supported by ReplicaDB");
             }
         }
 

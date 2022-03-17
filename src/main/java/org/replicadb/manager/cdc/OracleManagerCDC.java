@@ -1,5 +1,17 @@
 package org.replicadb.manager.cdc;
 
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import io.debezium.data.Envelope;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.RecordChangeEvent;
@@ -14,20 +26,12 @@ import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.OracleManager;
 import org.replicadb.time.Conversions;
 
-import java.math.BigDecimal;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class OracleManagerCDC extends OracleManager implements DebeziumEngine.ChangeConsumer<RecordChangeEvent<SourceRecord>> {
 
     private static final Logger LOG = LogManager.getLogger(OracleManagerCDC.class.getName());
 
     private static PreparedStatement batchPS = null;
-    private static HashMap<String, String> mappingSourceSinkTables = new HashMap<>();
+    private static final HashMap<String, String> mappingSourceSinkTables = new HashMap<>();
 
     /**
      * Constructs the SqlManager.
@@ -57,7 +61,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
         String[] sinkTables = options.getSinkTable().split(",");
         for (int i = 0; i < sourceTables.length; i++) {
             mappingSourceSinkTables.put(sourceTables[i].trim().toLowerCase(), sinkTables[i].trim().toLowerCase());
-            LOG.debug("Source Table -> Sink Table: {} -> {}", sourceTables[i].trim(),sinkTables[i].trim() );
+            LOG.debug("Source Table -> Sink Table: {} -> {}", sourceTables[i].trim(), sinkTables[i].trim());
         }
     }
 
@@ -89,19 +93,19 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
                                             (oldSinkTableName != null && !oldSinkTableName.equals(getSourceTableName(record)))
                             ) {
 
-                              try {
-                                  int[] rows = batchPS.executeBatch();
-                                  this.getConnection().commit();
-                                  LOG.info("Commited batch records. Rows affected: {}", rows.length);
-                                  batchPS.close();
-                                  batchPS = null;
-                              }catch (Exception e){
-                                  LOG.error("Error ejecutando el batchPS.executeBatch: {}",e.getMessage());
-                                  LOG.error(e);
-                                  // TODO Si hay un error en un batchPS se hace rollback en todo el batch y perdemos datos.
-                                  // hay que ver como gestionar este error
+                                try {
+                                    int[] rows = batchPS.executeBatch();
+                                    this.getConnection().commit();
+                                    LOG.info("Commited batch records. Rows affected: {}", rows.length);
+                                    batchPS.close();
+                                    batchPS = null;
+                                } catch (Exception e) {
+                                    LOG.error("Error ejecutando el batchPS.executeBatch: {}", e.getMessage());
+                                    LOG.error(e);
+                                    // TODO Si hay un error en un batchPS se hace rollback en todo el batch y perdemos datos.
+                                    // hay que ver como gestionar este error
 
-                              }
+                                }
                             }
                         }
 
@@ -126,7 +130,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
                                 break;
                         }
                     } catch (Exception throwables) {
-                        LOG.error("Error preparando la operacion: {}",throwables.getMessage());
+                        LOG.error("Error preparando la operacion: {}", throwables.getMessage());
                         LOG.error(throwables);
                     }
                     oldOperation = operation;
@@ -147,7 +151,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
         } catch (SQLException throwables) {
             LOG.error("Un SQLException");
             LOG.error(throwables);
-        }catch (Exception e){
+        } catch (Exception e) {
             LOG.error("Salgo por aqui");
             LOG.error("Error no controlado: {}", e.getMessage());
             LOG.error(e);
@@ -271,7 +275,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
 
     }
 
-    private void doMerge(SourceRecord record) throws SQLException{
+    private void doMerge(SourceRecord record) throws SQLException {
         String sinkTableName = mappingSourceSinkTables.get(getSourceTableName(record).toLowerCase());
         String[] pks = getSourcePrimaryKeys(record);
         List<String> columns = getColumns(record);
@@ -296,7 +300,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
             for (int i = 0; i <= columns.size() - 1; i++) {
                 boolean contains = Arrays.asList(pks).contains(columns.get(i));
                 boolean containsUppercase = Arrays.asList(pks).contains(columns.get(i).toUpperCase());
-                boolean containsQuoted = Arrays.asList(pks).contains("\""+columns.get(i).toUpperCase()+"\"");
+                boolean containsQuoted = Arrays.asList(pks).contains("\"" + columns.get(i).toUpperCase() + "\"");
                 if (!contains && !containsUppercase && !containsQuoted)
                     sqlCmd.append(" trg.").append(columns.get(i)).append(" = src.").append(columns.get(i)).append(" ,");
             }
@@ -304,7 +308,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
             sqlCmd.setLength(sqlCmd.length() - 1);
 
             sqlCmd.append(" WHEN NOT MATCHED THEN INSERT ( ");
-            sqlCmd.append(String.join(",",columns));
+            sqlCmd.append(String.join(",", columns));
             // Todas las columnas
             sqlCmd.append(" ) VALUES ( ");
             for (int i = 0; i <= columns.size() - 1; i++) {
@@ -463,7 +467,7 @@ public class OracleManagerCDC extends OracleManager implements DebeziumEngine.Ch
 
     private String getSourceTableName(SourceRecord recordValue) {
         Struct struct = (Struct) recordValue.value();
-        String table =struct.getStruct("source").getString("table");
+        String table = struct.getStruct("source").getString("table");
         String schema = struct.getStruct("source").getString("schema");
         // get source
         return schema + "." + table;

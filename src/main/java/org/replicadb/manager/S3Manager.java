@@ -1,6 +1,16 @@
 package org.replicadb.manager;
 
 
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Types;
+import java.util.List;
+import java.util.Properties;
+
 import alex.mojaki.s3upload.MultiPartOutputStream;
 import alex.mojaki.s3upload.StreamTransferManager;
 import com.amazonaws.SDKGlobalConfiguration;
@@ -17,16 +27,10 @@ import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.file.FileManager;
 import org.replicadb.manager.file.FileManagerFactory;
 
-import java.net.URI;
-import java.sql.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-
 public class S3Manager extends SqlManager {
 
     private static final Logger LOG = LogManager.getLogger(S3Manager.class.getName());
-
+    private final FileManager fileManager;
     private String accessKey;
     private String secretKey;
     private boolean secuereConnection;
@@ -34,7 +38,22 @@ public class S3Manager extends SqlManager {
     private String rowKeyColumnName;
     private String rowContentColumnName;
     private String keyFileName;
-    private final FileManager fileManager;
+
+    /**
+     * Constructs the SqlManager.
+     *
+     * @param opts the ReplicaDB ToolOptions describing the user's requested action.
+     */
+    public S3Manager(ToolOptions opts, DataSourceType dsType) {
+        super(opts);
+        this.dsType = dsType;
+        loadS3CustomProperties();
+
+        if (!isObjectPerRow())
+            this.fileManager = new FileManagerFactory().accept(opts, dsType);
+        else
+            this.fileManager = null;
+    }
 
     private void setAccessKey(String accessKey) {
         if (accessKey != null && !accessKey.isEmpty())
@@ -48,18 +67,6 @@ public class S3Manager extends SqlManager {
             this.secretKey = secretKey;
         else
             throw new IllegalArgumentException("secretKey property cannot be null");
-    }
-
-    private void setSecuereConnection(String secuereConnection) {
-        // Secure connection default true
-        if (secuereConnection != null && !secuereConnection.isEmpty())
-            this.secuereConnection = Boolean.parseBoolean(secuereConnection);
-        else
-            this.secuereConnection = true;
-    }
-
-    private void setObjectPerRow(boolean objectPerRow) {
-        this.objectPerRow = objectPerRow;
     }
 
     private void setRowKeyColumnName(String rowKeyColumnName) {
@@ -87,26 +94,22 @@ public class S3Manager extends SqlManager {
         return secuereConnection;
     }
 
+    private void setSecuereConnection(String secuereConnection) {
+        // Secure connection default true
+        if (secuereConnection != null && !secuereConnection.isEmpty())
+            this.secuereConnection = Boolean.parseBoolean(secuereConnection);
+        else
+            this.secuereConnection = true;
+    }
+
     private boolean isObjectPerRow() {
         return objectPerRow;
     }
 
     // TODO: complete-atomic and incremental? is not supported in s3
 
-    /**
-     * Constructs the SqlManager.
-     *
-     * @param opts the ReplicaDB ToolOptions describing the user's requested action.
-     */
-    public S3Manager(ToolOptions opts, DataSourceType dsType) {
-        super(opts);
-        this.dsType = dsType;
-        loadS3CustomProperties();
-
-        if (!isObjectPerRow())
-            this.fileManager = new FileManagerFactory().accept(opts, dsType);
-        else
-            this.fileManager = null;
+    private void setObjectPerRow(boolean objectPerRow) {
+        this.objectPerRow = objectPerRow;
     }
 
     /**
@@ -186,13 +189,13 @@ public class S3Manager extends SqlManager {
         }
 
         serviceEndpoint = serviceEndpoint + s3Uri.getHost() + servicePort;
-        LOG.debug("Using serviceEndpoint: " + serviceEndpoint);
+        LOG.debug("Using serviceEndpoint: {}", serviceEndpoint);
 
         // Get Bucket name
         String bucketName = s3Uri.getPath().replaceAll("/$", "");
         if (keyFileName == null) {
             this.keyFileName = bucketName.substring(bucketName.lastIndexOf("/") + 1);
-            bucketName = bucketName.replace(keyFileName,"").replaceAll("/$", "");
+            bucketName = bucketName.replace(keyFileName, "").replaceAll("/$", "");
         }
         LOG.info("Bucket Name: {}, File Name: {}", bucketName, keyFileName);
 
@@ -225,7 +228,7 @@ public class S3Manager extends SqlManager {
         // Get content column index
         int rowContentColumnIndex = 0;
         for (int i = 1; i <= columnCount; i++) {
-            if (rsmd.getColumnName(i).toUpperCase().equals(rowContentColumnName.toUpperCase())) {
+            if (rsmd.getColumnName(i).equalsIgnoreCase(rowContentColumnName)) {
                 rowContentColumnIndex = i;
             }
         }

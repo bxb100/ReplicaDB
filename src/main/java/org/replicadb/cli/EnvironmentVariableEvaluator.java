@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  */
 class EnvironmentVariableEvaluator {
     private static final String VAR_REG_EXP = "\\$\\{(.*?)\\}";
-    private static Pattern varPattern = Pattern.compile(VAR_REG_EXP);
+    private static final Pattern varPattern = Pattern.compile(VAR_REG_EXP);
 
     /**
      * Given a string with environment variables it replaces them with its value

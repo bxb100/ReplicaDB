@@ -1,5 +1,15 @@
 package org.replicadb.manager;
 
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.SimpleDateFormat;
+import java.util.Properties;
+import java.util.TimeZone;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -9,11 +19,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
-
-import java.sql.*;
-import java.text.SimpleDateFormat;
-import java.util.Properties;
-import java.util.TimeZone;
 
 public class KafkaManager extends SqlManager {
 
@@ -94,7 +99,7 @@ public class KafkaManager extends SqlManager {
 
                 // Just one sink column and is a JSON.
                 // Create a JSON object form content.
-                if (sinkColumns[0].toLowerCase().equals("json")) {
+                if (sinkColumns[0].equalsIgnoreCase("json")) {
                     obj = (ObjectNode) mapper.readTree(resultSet.getString(1));
                 } else {
 
@@ -137,7 +142,7 @@ public class KafkaManager extends SqlManager {
                                 if (timeStamp != null)
                                     obj.put(columnName, timestampFormat.format(resultSet.getTimestamp(i).getTime()));
                                 else
-                                    obj.put(columnName,"");
+                                    obj.put(columnName, "");
                                 break;
                             case Types.BINARY:
                             case Types.BLOB:

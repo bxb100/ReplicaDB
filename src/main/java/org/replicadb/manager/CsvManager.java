@@ -1,14 +1,5 @@
 package org.replicadb.manager;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.QuoteMode;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.replicadb.cli.ReplicationMode;
-import org.replicadb.cli.ToolOptions;
-import org.replicadb.rowset.CsvCachedRowSetImpl;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,11 +13,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.sql.*;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.QuoteMode;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.replicadb.cli.ReplicationMode;
+import org.replicadb.cli.ToolOptions;
+import org.replicadb.rowset.CsvCachedRowSetImpl;
 
 public class CsvManager extends SqlManager {
 
@@ -323,7 +327,8 @@ public class CsvManager extends SqlManager {
 
 
     @Override
-    protected void createStagingTable() {}
+    protected void createStagingTable() {
+    }
 
     @Override
     /**
@@ -383,7 +388,8 @@ public class CsvManager extends SqlManager {
     @Override
     public void cleanUp() throws Exception {
         // Ensure drop temporal file
-        for (int i = 0; i <= tempFilesPath.length - 1; i++) getFileFromPathString(tempFilesPath[i]).delete();
+        for (int i = 0; i <= tempFilesPath.length - 1; i++)
+            getFileFromPathString(tempFilesPath[i]).delete();
     }
 
 

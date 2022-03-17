@@ -1,5 +1,10 @@
 package org.replicadb;
 
+import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import io.debezium.embedded.Connect;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.RecordChangeEvent;
@@ -9,19 +14,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.manager.ConnManager;
 
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 public class ReplicaDBCDC implements Runnable {
     private static final Logger LOG = LogManager.getLogger(ReplicaDBCDC.class.getName());
 
     public final ConnManager sourceDs;
     public final ConnManager sinkDs;
-
-    private DebeziumEngine<?> engine;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private DebeziumEngine<?> engine;
 
     public ReplicaDBCDC(ConnManager sourceDs, ConnManager sinkDs) {
         this.sourceDs = sourceDs;
@@ -90,11 +89,11 @@ public class ReplicaDBCDC implements Runnable {
     public static class EngineCompletionCallBack implements DebeziumEngine.CompletionCallback {
         @Override
         public void handle(boolean success, String message, Throwable error) {
-            LOG.error("por aqui: {} ",success);
+            LOG.error("por aqui: {} ", success);
             //LOG.error("por aqui: {} ",message);
             LOG.error(error);
 
-            if (!success && message.contains("Unable to initialize")){
+            if (!success && message.contains("Unable to initialize")) {
                 // rearrancar el engine TODO
                 LOG.error("Rearrancar la aplicación aqui! no se como...");
             }

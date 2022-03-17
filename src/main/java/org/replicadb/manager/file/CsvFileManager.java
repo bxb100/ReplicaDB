@@ -1,5 +1,27 @@
 package org.replicadb.manager.file;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.sql.Clob;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.util.Map;
+import java.util.Properties;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.QuoteMode;
@@ -10,30 +32,16 @@ import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.util.BandwidthThrottling;
 import org.replicadb.rowset.CsvCachedRowSetImpl;
-
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.sql.*;
-import java.util.Map;
-import java.util.Properties;
-
 import static org.replicadb.manager.LocalFileManager.getFileFromPathString;
 import static org.replicadb.manager.util.SqlNames.getAllSinkColumns;
 
 public class CsvFileManager extends FileManager {
     private static final Logger LOG = LogManager.getLogger(CsvFileManager.class);
+    private CsvCachedRowSetImpl csvResultset;
 
     public CsvFileManager(ToolOptions opts, DataSourceType dsType) {
         super(opts, dsType);
     }
-
-    private CsvCachedRowSetImpl csvResultset;
 
     private CSVFormat setCsvFormat(DataSourceType dsType) {
 

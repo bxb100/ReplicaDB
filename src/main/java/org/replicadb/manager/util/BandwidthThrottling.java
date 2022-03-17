@@ -1,14 +1,14 @@
 package org.replicadb.manager.util;
 
-import org.apache.commons.lang3.concurrent.TimedSemaphore;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.concurrent.TimedSemaphore;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class BandwidthThrottling {
     private static final Logger LOG = LogManager.getLogger(BandwidthThrottling.class);
@@ -23,8 +23,8 @@ public class BandwidthThrottling {
      * and using it as permits in the rate limit.
      *
      * @param bandwidthThrottling the bandwidth cap for the replication in KB/sec.
-     * @param fetchSize the resultSet fechSize
-     * @param resultSet the resultset cursor moved to the first row (resultSet.next())
+     * @param fetchSize           the resultSet fechSize
+     * @param resultSet           the resultset cursor moved to the first row (resultSet.next())
      * @throws SQLException
      */
     public BandwidthThrottling(int bandwidthThrottling, int fetchSize, ResultSet resultSet) throws SQLException {

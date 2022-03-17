@@ -1,18 +1,17 @@
 package org.replicadb.manager.util;
 
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
-
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 
 
 public class SqlNames {
     private static final Logger LOG = LogManager.getLogger(SqlNames.class);
 
     /**
-     *
      * @param options
      * @param rsmd
      * @return
@@ -32,7 +31,6 @@ public class SqlNames {
     }
 
     /**
-     *
      * @param options
      * @param rsmd
      * @return
@@ -53,7 +51,6 @@ public class SqlNames {
         }
         return columnNames.toString();
     }
-
 
 
 }

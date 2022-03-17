@@ -1,13 +1,23 @@
 package org.replicadb.manager;
 
+import java.io.IOException;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.Arrays;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ReplicationMode;
 import org.replicadb.cli.ToolOptions;
-
-import java.io.IOException;
-import java.sql.*;
-import java.util.Arrays;
 
 
 public class OracleManager extends SqlManager {
@@ -86,9 +96,11 @@ public class OracleManager extends SqlManager {
 
         // The recyclebin is available since version 10
         DatabaseMetaData meta = this.getConnection().getMetaData();
-        if ( meta.getDatabaseMajorVersion() >= 10 ) stmt.executeUpdate("ALTER SESSION SET recyclebin = OFF");
+        if (meta.getDatabaseMajorVersion() >= 10)
+            stmt.executeUpdate("ALTER SESSION SET recyclebin = OFF");
 
-        if (directRead) stmt.executeUpdate("ALTER SESSION SET \"_serial_direct_read\"=true ");
+        if (directRead)
+            stmt.executeUpdate("ALTER SESSION SET \"_serial_direct_read\"=true ");
 
         stmt.close();
     }
@@ -162,7 +174,7 @@ public class OracleManager extends SqlManager {
                             ps.setTimestamp(i, resultSet.getTimestamp(i));
                             break;
                         case Types.BINARY:
-                            ps.setBytes(i,resultSet.getBytes(i));
+                            ps.setBytes(i, resultSet.getBytes(i));
                             break;
                         case Types.BLOB:
                             Blob blobData = resultSet.getBlob(i);
@@ -194,7 +206,7 @@ public class OracleManager extends SqlManager {
                             arrayData.free();
                             break;
                         case Types.STRUCT:
-                            ps.setObject(i, resultSet.getObject(i),Types.STRUCT);
+                            ps.setObject(i, resultSet.getObject(i), Types.STRUCT);
                             break;
                         default:
                             ps.setString(i, resultSet.getString(i));
@@ -307,7 +319,7 @@ public class OracleManager extends SqlManager {
 
             boolean contains = Arrays.asList(pks).contains(colName);
             boolean containsUppercase = Arrays.asList(pks).contains(colName.toUpperCase());
-            boolean containsQuoted = Arrays.asList(pks).contains("\""+colName.toUpperCase()+"\"");
+            boolean containsQuoted = Arrays.asList(pks).contains("\"" + colName.toUpperCase() + "\"");
             if (!contains && !containsUppercase && !containsQuoted)
                 sql.append(" trg.").append(colName).append(" = src.").append(colName).append(" ,");
         }
@@ -334,10 +346,12 @@ public class OracleManager extends SqlManager {
     }
 
     @Override
-    public void preSourceTasks() {}
+    public void preSourceTasks() {
+    }
 
     @Override
-    public void postSourceTasks() {}
+    public void postSourceTasks() {
+    }
 
     @Override
     public void dropStagingTable() throws SQLException {

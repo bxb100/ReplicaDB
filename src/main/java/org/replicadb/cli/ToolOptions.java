@@ -1,11 +1,17 @@
 package org.replicadb.cli;
 
-import org.apache.commons.cli.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.IOException;
 import java.util.Properties;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ToolOptions {
 
@@ -336,11 +342,15 @@ public class ToolOptions {
 
             //get & set Options
             if (line.hasOption("verbose")) setVerbose(true);
-            if (line.hasOption("sink-disable-index")) setSinkDisableIndexNotNull(true);
-            if (line.hasOption("sink-disable-escape")) setSinkDisableEscapeNotNull(true);
-            if (line.hasOption("sink-disable-truncate")) setSinkDisableTruncateNotNull(true);
+            if (line.hasOption("sink-disable-index"))
+                setSinkDisableIndexNotNull(true);
+            if (line.hasOption("sink-disable-escape"))
+                setSinkDisableEscapeNotNull(true);
+            if (line.hasOption("sink-disable-truncate"))
+                setSinkDisableTruncateNotNull(true);
             if (line.hasOption("sink-analyze")) setSinkAnalyzeNotNull(true);
-            if (line.hasOption("quoted-identifiers")) setQuotedIdentifiers(true);
+            if (line.hasOption("quoted-identifiers"))
+                setQuotedIdentifiers(true);
 
             setModeNotNull(line.getOptionValue("mode"));
             setSinkColumnsNotNull(line.getOptionValue("sink-columns"));
@@ -366,8 +376,9 @@ public class ToolOptions {
             setSinkFileFormatNotNull(line.getOptionValue("sink-file-format"));
 
             //Check for required values
-            if (!checkRequiredValues()) throw new IllegalArgumentException("Missing any of the required parameters:" +
-                    " source-connect=" + this.sourceConnect + " OR sink-connect=" + this.sinkConnect);
+            if (!checkRequiredValues())
+                throw new IllegalArgumentException("Missing any of the required parameters:" +
+                        " source-connect=" + this.sourceConnect + " OR sink-connect=" + this.sinkConnect);
         }
 
     }
@@ -383,7 +394,7 @@ public class ToolOptions {
         formatter.printHelp("replicadb [OPTIONS]", header, this.options, footer, false);
     }
 
-    private Boolean existsHelpArgument(String args[]) {
+    private Boolean existsHelpArgument(String[] args) {
         //help argument is -h or --help
         for (int i = 0; i <= args.length - 1; i++) {
             if (args[i].equals("-h") || args[i].equals("--help")) {
@@ -393,7 +404,7 @@ public class ToolOptions {
         return false;
     }
 
-    private Boolean existsVersionArgument(String args[]) {
+    private Boolean existsVersionArgument(String[] args) {
         //help argument is -h or --help
         for (int i = 0; i <= args.length - 1; i++) {
             if (args[i].equals("--version")) {
@@ -420,9 +431,7 @@ public class ToolOptions {
 
         if (this.mode == null) return false;
         if (this.sourceConnect == null) return false;
-        if (this.sinkConnect == null) return false;
-
-        return true;
+        return this.sinkConnect != null;
     }
 
     private void loadOptionsFile() throws IOException {
@@ -826,11 +835,6 @@ public class ToolOptions {
         return fetchSize;
     }
 
-    public void setFetchSizeNotNull(String fetchSize) {
-        if (fetchSize != null && !fetchSize.isEmpty())
-            setFetchSize(fetchSize);
-    }
-
     public void setFetchSize(String fetchSize) {
         try {
             if (fetchSize != null && !fetchSize.isEmpty()) {
@@ -842,6 +846,11 @@ public class ToolOptions {
             throw e;
         }
 
+    }
+
+    public void setFetchSizeNotNull(String fetchSize) {
+        if (fetchSize != null && !fetchSize.isEmpty())
+            setFetchSize(fetchSize);
     }
 
     @Override
@@ -892,7 +901,8 @@ public class ToolOptions {
         try {
             if (bandwidthThrottling != null && !bandwidthThrottling.isEmpty()) {
                 this.bandwidthThrottling = Integer.parseInt(bandwidthThrottling);
-                if (this.bandwidthThrottling < 0) throw new NumberFormatException();
+                if (this.bandwidthThrottling < 0)
+                    throw new NumberFormatException();
             }
         } catch (NumberFormatException | NullPointerException e) {
             LOG.error("Option --bandwidth-throttling must be a positive integer grater than 0.");

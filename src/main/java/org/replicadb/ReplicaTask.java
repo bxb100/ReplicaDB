@@ -1,5 +1,8 @@
 package org.replicadb;
 
+import java.sql.ResultSet;
+import java.util.concurrent.Callable;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
@@ -7,17 +10,13 @@ import org.replicadb.manager.ConnManager;
 import org.replicadb.manager.DataSourceType;
 import org.replicadb.manager.ManagerFactory;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.concurrent.Callable;
-
 final public class ReplicaTask implements Callable<Integer> {
 
     private static final Logger LOG = LogManager.getLogger(ReplicaTask.class.getName());
 
-    private int taskId;
+    private final int taskId;
+    private final ToolOptions options;
     private String taskName;
-    private ToolOptions options;
 
 
     public ReplicaTask(int id, ToolOptions options) {
@@ -29,7 +28,7 @@ final public class ReplicaTask implements Callable<Integer> {
     public Integer call() throws Exception {
 
         //System.out.println("Task ID :" + this.taskId + " performed by " + Thread.currentThread().getName());
-        this.taskName = "TaskId-"+this.taskId;
+        this.taskName = "TaskId-" + this.taskId;
 
         Thread.currentThread().setName(taskName);
 
@@ -47,7 +46,7 @@ final public class ReplicaTask implements Callable<Integer> {
         try {
             sourceDs.getConnection();
         } catch (Exception e) {
-            LOG.error("ERROR in " + this.taskName+ " getting Source connection: " + e.getMessage());
+            LOG.error("ERROR in " + this.taskName + " getting Source connection: " + e.getMessage());
             throw e;
         }
 
@@ -69,7 +68,7 @@ final public class ReplicaTask implements Callable<Integer> {
         try {
             int processedRows = sinkDs.insertDataToTable(rs, taskId);
             // TODO determine the total rows processed in all the managers
-            LOG.info("A total of {} rows processed by task {}", processedRows,  taskId);
+            LOG.info("A total of {} rows processed by task {}", processedRows, taskId);
         } catch (Exception e) {
             LOG.error("ERROR in " + this.taskName + " inserting data to sink table: " + e.getMessage());
             throw e;

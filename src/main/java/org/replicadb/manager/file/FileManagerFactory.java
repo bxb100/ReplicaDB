@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.replicadb.cli.ToolOptions;
 import org.replicadb.manager.DataSourceType;
-
 import static org.replicadb.manager.file.FileFormats.CSV;
 import static org.replicadb.manager.file.FileFormats.ORC;
 

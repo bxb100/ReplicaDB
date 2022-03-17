@@ -1,13 +1,13 @@
 package org.replicadb.cli;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Set;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class OptionsFile {
 
@@ -16,17 +16,17 @@ public class OptionsFile {
     private static final String SINK_CONNECTION_PREFIX = "sink.connect.parameter.";
 
 
-    private EnvironmentVariableEvaluator envEvaluator = new EnvironmentVariableEvaluator();
+    private final EnvironmentVariableEvaluator envEvaluator = new EnvironmentVariableEvaluator();
 
-    private Properties properties;
-
-    public Properties getProperties() {
-        return properties;
-    }
+    private final Properties properties;
 
     public OptionsFile(String optionsFilePath) throws IOException {
         this.properties = new Properties();
         loadProperties(optionsFilePath);
+    }
+
+    public Properties getProperties() {
+        return properties;
     }
 
     private void loadProperties(String optionsFilePath) throws IOException {

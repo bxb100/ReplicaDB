@@ -1,19 +1,24 @@
 package org.replicadb.manager;
 
-import com.mysql.cj.jdbc.JdbcPreparedStatement;
-import org.mariadb.jdbc.MariaDbStatement;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.replicadb.cli.ReplicationMode;
-import org.replicadb.cli.ToolOptions;
-import org.replicadb.manager.util.BandwidthThrottling;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.Properties;
+
+import com.mysql.cj.jdbc.JdbcPreparedStatement;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.mariadb.jdbc.MariaDbStatement;
+import org.replicadb.cli.ReplicationMode;
+import org.replicadb.cli.ToolOptions;
+import org.replicadb.manager.util.BandwidthThrottling;
 
 public class MySQLManager extends SqlManager {
 
@@ -31,11 +36,11 @@ public class MySQLManager extends SqlManager {
         super(opts);
         this.dsType = dsType;
         // In MySQL and MariaDB this properties are required
-        if (this.dsType.equals(DataSourceType.SINK)){
+        if (this.dsType.equals(DataSourceType.SINK)) {
             Properties mysqlProps = new Properties();
             mysqlProps.setProperty("characterEncoding", "UTF-8");
             mysqlProps.setProperty("allowLoadLocalInfile", "true");
-            mysqlProps.setProperty("rewriteBatchedStatements","true");
+            mysqlProps.setProperty("rewriteBatchedStatements", "true");
             options.setSinkConnectionParams(mysqlProps);
         }
     }
@@ -117,7 +122,8 @@ public class MySQLManager extends SqlManager {
                                 break;
                         }
 
-                        if (!resultSet.wasNull() || colValue != null) cols.append(colValue);
+                        if (!resultSet.wasNull() || colValue != null)
+                            cols.append(colValue);
                     }
 
                     // Escape special chars
@@ -375,18 +381,18 @@ public class MySQLManager extends SqlManager {
     }
 
     private String byteToMysqlHex(byte[] bytes) {
-      String returnData = "";
+        String returnData = "";
 
-      if (bytes != null) {
+        if (bytes != null) {
 
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-          int v = bytes[j] & 0xFF;
-          hexChars[j * 2] = hexArray[v >>> 4];
-          hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+            char[] hexChars = new char[bytes.length * 2];
+            for (int j = 0; j < bytes.length; j++) {
+                int v = bytes[j] & 0xFF;
+                hexChars[j * 2] = hexArray[v >>> 4];
+                hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+            }
+            returnData = "0x" + new String(hexChars);
         }
-        returnData = "0x" + new String(hexChars);
-      }
-      return returnData;
+        return returnData;
     }
 }
